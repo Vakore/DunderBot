@@ -17,15 +17,6 @@ function breakAndPlaceBlock(bot, x, y, z, checkStand) {
     return shouldItBreak;
 };
 
-function isSwim(swimme) {
-    var isTitle = false;
-    if (swimme == "start" || swimme == "swimFast" || swimme == "swimSlow" || swimme == "lava" ||
-        swimme == "fallWater" || swimme == "fallLava") {
-        isTitle = true;
-    }
-    return isTitle;
-};
-
 function isBlock(bot, x, y, z, zeNode) {
     var myBlock = bot.blockAt(new Vec3(x, y, z));
     var walkThrough = 1;
@@ -208,6 +199,7 @@ function getDigTime(bot, x, y, z, inWater, useTools) {
         } else if (myBlock.hardness >= 100 || myBlock.hardness == null) {
             myDigTime = 9999999;
         }
+        //console.log(myBlock.name + ": " + myBlock.hardness);
     }
     return myDigTime;
 };

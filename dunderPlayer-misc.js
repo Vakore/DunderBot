@@ -36,10 +36,9 @@ function equipItem(bot, itemNames, dest) {
     var equipTries = 0;
     if (dest == undefined) {dest = "hand";}
     while (equippedItem < 0 && equipTries < itemNames.length) {
-        console.log("asdf");
         if (dest == "hand" && getHeldItem(bot).length > 0 && itemNames[equipTries] == bot.heldItem.name ||
             dest == "off-hand" && bot.inventory.slots[45] && itemNames[equipTries] == bot.inventory.slots[45].name) {
-            console.log("holdingThat!");
+            //console.log("holdingThat!");
             return;
         }
         //console.log(itemNames[equipTries]);
@@ -50,16 +49,15 @@ function equipItem(bot, itemNames, dest) {
                 finalItemName = itemNames[equipTries];
                 equippedItem = i;
                 i = inven.length;
-                console.log("yay");
             } else {
-                console.log(itemNames[equipTries] + ", " + inven[i].name);
+                //console.log(itemNames[equipTries] + ", " + inven[i].name);
             }
         }
         equipTries++;
     }
     if (equippedItem == bot.quickBarSlot + 36 && dest == "hand") {
         equippedItem = -1;
-        console.log("no need");
+        //console.log("no need");
     }
     for (var i = 0; i < bot.dunder.equipPackets.length; i++) {
         if (bot.dunder.equipPackets[i].slot == equippedItem && bot.dunder.equipPackets[i].destination == dest) {
@@ -67,30 +65,28 @@ function equipItem(bot, itemNames, dest) {
         }
     }
     if (inven[equippedItem] == bot.heldItem) {
-        console.log("hi");
+        //console.log("hi");
     } else if (equippedItem >= 0 && inven[equippedItem] != bot.heldItem) {
         var needsToGo = true;
         for (var i = 36; i < 43; i++) {
             if (inven[i] == null) {
                 needsToGo = false;
-                console.log("j");
             }
         }
-        console.log("bbb");
         bot.dunder.equipPackets.push({"slot":equippedItem, "destination":dest, "time":10});
         //attackTimer = 0;
         bot.equip(inven[equippedItem], dest, function(e) {
-            console.log("canEquip: " + e);
+            //console.log("canEquip: " + e);
             for (var i = 0; i < bot.dunder.equipPackets.length; i++) {
                 if (bot.dunder.equipPackets[i].slot == equippedItem && bot.dunder.equipPackets[i].destination == dest) {
                     bot.dunder.equipPackets.splice(i, 1);
                 }
             }
-            console.log(bot.quickBarSlot + ", " + equippedItem);
+            //console.log(bot.quickBarSlot + ", " + equippedItem);
             //attackTimer = 0;
         });
     }
-    console.log("jkl: " + itemNames + ", " + equippedItem);
+    //console.log("jkl: " + itemNames + ", " + equippedItem);
     return finalItemName;
 };
 
@@ -120,12 +116,12 @@ var digStrengths = {
     "web":["netherite_sword","diamond_sword","iron_sword","stone_sword","golden_sword","wooden_sword","shears"],
 };
 function equipTool(bot, x, y, z) {
-    console.log("why");
+    //console.log("why");
     var material = bot.blockAt(new Vec3(x, y, z));
     if (material && material.material != undefined && digStrengths[material.material] != undefined) {
         equipItem(bot, digStrengths[material.material]);
     } else {
-        console.log("eh");
+        //console.log("eh");
     }
 };
 
@@ -304,7 +300,9 @@ function placeBlock(bot, x, y, z, placeBackwards) {
         bot.dunder.blockPackets.push({"x":x,"y":y,"z":z});//used in case of weirdness from the server
         bot.lookAt(new Vec3(x, y, z), 100);
         //attackTimer = 0;
-        bot.placeBlock(bot.blockAt(new Vec3(x, y, z)), placeOffSet).then(function(e) {
+        var placeBlockVar = bot.placeBlock(bot.blockAt(new Vec3(x, y, z)), placeOffSet);
+        placeBlockVar.catch(function(e) {console.log("place block error: \n" + e);});
+        placeBlockVar.then(function(e) {
             //attackTimer = 0;
             //console.log("alerted " + e);
             for (var i = 0; i < bot.dunder.blockPackets.length; i++) {

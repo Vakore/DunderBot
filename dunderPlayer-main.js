@@ -1,26 +1,85 @@
+
+//--------------SETTINGS-----------------------
+const version = "1.20.1";
+const host = "localhost";//localhost for LAN worlds
+const port = 25565;//25565 is default port for most servers
+const commanders = ["Vakore"];//The commander of the bots. Will only listen to chat commands from these players
+var botsToSpawn = ["DunderBot", "AnotherBot"/*, "ThirdBot"*/];//Currently only accepts a username as an argument. Note that more than one bot causes unwated bugs and errors that need ironing out. One or two works fine, but three starts to make things unstable.
+var botJoinServerDelay = 2000;//2000 by default to avoid throttled connections
+//------------------SETTINGS--------------------
+
 /*
-dunderHelper
+Dunder Bot Minecraft Player
+By Vakore
+
+Type 'goto <player>', 'goto <x> <y> <z>', or 'goto <x> <z>' to enter pathfinding mode and go to those coordinates
+Type 'e' to enter generic mode.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
 TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
 SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
 
-//--------------SETTINGS-----------------------
-const version = "1.20.1";
-const host = "localhost";//localhost
-const port = 25565;//25565 is default
-const commanders = ["Vakore"];
-var botsToSpawn = ["DunderBot", /*"AnotherBot", "ThirdBot", "parkourplayer", "NotSuperBri", "ToadWashington"*/];
-var botJoinServerDelay = 2000;//2000 by default to avoid throttled connections
-//var playersToBowTo = ["TheMithrandir", "L247Chaos", "E_X_K"];
-//------------------SETTINGS--------------------
+Key:
+(!) - urgent
+(*) - presumed fixed
+(#) - confirmed fixed
+(@) - fixed but still some work to be done
+none - todo
+
+TODO:
+(*) - 'Leaves above' bug for pathfinder
+(@) Clutching for pathfinder(and 'don't clutch' such as waterloggables)
+
+Multi-bots: Fix the weird spazzing out for the triple bot test when one of them falls in water
+
+Swimming in pathfinder(remember kelp bug):
+1. Exitting water
+2. Mining near water
+3. Swimming at a decent speed
+4. Not drowning
+
+Whatever the 'pillar into sky' bug is
+(*) - "goUp" bug on top of waterfalls
+
+(* - Was due to "Dig Up A") "mining down" due to the freestyle ability when falling down slopes
+/tp DunderBot 163 93 217
+goto 157 90 217
+
+falling down slopes in general
+water clutching buggyness
+myFireCandidate.offset undefined stuff
+
+Path update handler(someone places/breaks blocks)
+
+Shortcut finder/hill climber for pathfinder
+Jump sprinting for pathfinder
+Testing/fixing multiple players/lava for pathfinder
+Option to not break blocks for pathfinder
+Doors(pathfinding, swimming, pvp)?
+Separation for following
+'Hunt' mode(animals)
+Handle arrows for PvE
+Handle "speed for PvE(i.e. vex going backwards doesn't need extra spacing, one going forwards a lot does)
+PvP mode with teams handler
+Bow/arrows in PvP and hueristics for pvp "personalities" (i.e. stuns a lot, lava spams, defensive, aggro, combos versus critspam, etc.)
+Group fight tests
+PvP + PvE tests
+Farming/mining/chopping/herding
+Inventory management(throw out trash items for better ones, possibly mess around with modifiying inventory-viewer)
+
+Proximity chat compatibility?
+Discord VC compatiblity?
+'Scouter' for open spaces for pathfinder?
+Figure out that one mine block rejected promise thingy
+*/
+const dunderBotPlayerVersion = "Alpha - 8/6/2023";
+
 
 //require("events").EventEmitter.prototype._maxListeners = 100;
 //process.setMaxListeners = 100;
-const mcData = require("minecraft-data")(version);
+var mcData = require("minecraft-data")(version);
 const mineflayer = require("mineflayer");
 const {PlayerState} = require("prismarine-physics");
 //const inventoryViewer = require('mineflayer-web-inventory');
@@ -54,12 +113,20 @@ function makeBots(cbtm) {
         port: port,//25565 is the default
         version: version,
        	username: botsToSpawn[cbtm],
-        viewDistance:4,
+        viewDistance:2,
         //auth:"microsoft",
     });
     //inventoryViewer(bots[cbtm]);
 
+    bots[cbtm].once('inject_allowed', () => {//https://github.com/PrismarineJS/mineflayer/issues/2588
+        mcData.blocksArray[mcData.blocksByName.copper_ore.id].hardness = 3;
+        mcData.blocksArray[mcData.blocksByName.copper_ore.id].resistance = 3;
+    });
+
     bots[cbtm].dunder = {
+        "cbtm":cbtm,
+        "chatParticles":false/*(cbtm == 0)*/,
+
         "spawned":false,
 
         "masterState":"idle",
@@ -92,6 +159,8 @@ function makeBots(cbtm) {
             "sneak":false,
         },
 
+        "cursorBlock":null,
+
         //pathfinding
         //"chunkColumns":[],
         "lookY":0,
@@ -106,6 +175,29 @@ function makeBots(cbtm) {
         "isDigging":0,
         "goal":{x:0,y:0,z:0,reached:false},
         "maxAttempts":500,
+        "movesToGo":[],
+        "botMove":{
+            "forward":false,
+            "back":false,
+            "left":false,
+            "right":false,
+            "sneak":false,
+            "sprint":false,
+            "jump":false,
+            "isGrounded":0,
+            "faceBackwards":4,
+            "mlg":0,
+            "bucketTimer":0,
+            "bucketTarget":{x:0,y:0,z:0},
+            "lastTimer":-10,
+        },
+
+        "findingPath":null,
+        "foundPath":false,
+        "attempts":0,
+        "performanceStop":0,
+        "bestNodeIndex":0,
+        "bestNode":0,
     };
     var bot = bots[cbtm];
     bots[cbtm]._client.on("set_passengers", (packet) => {
@@ -175,7 +267,7 @@ function makeBots(cbtm) {
 
     currentBotToMake++;
     if (currentBotToMake < botsToSpawn.length) {
-        setTimeout(function() {makeBots(currentBotToMake);}, 10000);
+        setTimeout(function() {makeBots(currentBotToMake);}, 1000);
     }
 
 
@@ -198,16 +290,17 @@ function runBot(bot) {
         bot.physics.waterGravity = 0.001;
     }
 
-
-    myParticleDebugTimer++;
-    if (myParticleDebugTimer > 20) {
-        myParticleDebugTimer = 0;
-        for (var i = 0; i < movesToGo.length; i++) {
-            bot.chat("/particle flame " + movesToGo[i].x + " " + movesToGo[i].y + " " + movesToGo[i].z);
+    if (bot.dunder.chatParticles) {
+        myParticleDebugTimer++;
+        if (myParticleDebugTimer > 20) {
+            myParticleDebugTimer = 0;
+            for (var i = 0; i < bot.dunder.movesToGo.length; i++) {
+                bot.chat("/particle flame " + bot.dunder.movesToGo[i].x + " " + bot.dunder.movesToGo[i].y + " " + bot.dunder.movesToGo[i].z);
+            }
         }
     }
     //bot.chat("/particle minecraft:flame ~ ~ ~ 0 0 0 0 1 force");
-    var cursorBlock = bot.blockAtCursor(5);
+    bot.dunder.cursorBlock = bot.blockAtCursor(5);
     bot.dunder.onFire = parseEntityAnimation("player", bot.entity.metadata[0])[0];
     bot.dunder.lastPosition = bot.entity.position;
     //changing line 117 of prismarine-physics's index.js to 
@@ -232,6 +325,7 @@ function runBot(bot) {
     bot.dunder.attackTimer += 0.05;
     bot.dunder.needsSpeed -= (bot.dunder.needsSpeed > -100);
     bot.dunder.isDigging -= (bot.dunder.isDigging > -10);
+    bot.dunder.searchingPath -= (bot.dunder.searchingPath > -100);
     if (bot.targetDigBlock) {bot.dunder.isDigging = 2;}
 
     for (var i in bot.dunder.entityHitTimes) {
@@ -353,7 +447,7 @@ for (var i in bot.entities) {
         bot.dunder.onfire--;
     }
 
-    if (true) {
+    if (bot.masterState == "pathfinding") {
         strictFollow(bot);
         bot.dunder.state = "pathfinding";
     } else if (bot.isSleeping) {
@@ -383,7 +477,7 @@ for (var i in bot.entities) {
         maxDistance: 5,
     });
     bot.dunder.looktimer--;
-    if (bot.heldItem && bot.heldItem.name == "bucket" && waterBlock) {
+    if (bot.heldItem && bot.heldItem.name == "bucket" && waterBlock && bot.entity.velocity.y > -0.3518) {
             equipItem(bot, ["bucket"]);
             //bot.lookAt(bot.entity.position, 100);
             if (waterBlock) {
@@ -391,7 +485,7 @@ for (var i in bot.entities) {
                 //console.log(JSON.stringify(waterBlock));
             }
             //console.log(bot.entity.pitch);
-            if (/*cursorBlock*/waterBlock && bot.entity.heldItem && (bot.entity.heldItem.name == 'bucket') && bot.dunder.looktimer < 0) {
+            if (/*bot.dunder.cursorBlock*/waterBlock && bot.entity.heldItem && (bot.entity.heldItem.name == 'bucket') && bot.dunder.looktimer < 0) {
                 bot.activateItem(false);
                 bot.swingArm();
                 bot.dunder.looktimer = 5;
@@ -449,7 +543,7 @@ for (var i in bot.entities) {
                 bot.lookAt(myFireCandidate.position.offset(0.5, 0, 0.5), 100);
             }
             //console.log(bot.entity.pitch);
-            if (myFireCandidate && cursorBlock && cursorBlock.position.equals(myFireCandidate.position) && bot.entity.heldItem && (bot.entity.heldItem.name == 'water_bucket') && bot.dunder.looktimer < 0) {
+            if (myFireCandidate && bot.dunder.cursorBlock && bot.dunder.cursorBlock.position.equals(myFireCandidate.position) && bot.entity.heldItem && (bot.entity.heldItem.name == 'water_bucket') && bot.dunder.looktimer < 0) {
                 bot.activateItem(false);
                 bot.swingArm();
                 bot.dunder.looktimer = 1;

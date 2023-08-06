@@ -1,11 +1,15 @@
 function parseMessage(bot, username, msg) {
-    console.log("<" + username + "> " + msg);
+    //console.log("<" + username + "> " + msg);
     msg = msg.split(" ");
   if (commanders.includes(username)) {
     //console.log(username == "Vakore");
     switch (msg[0].toLowerCase()) {
         case "commands":
             bot.chat("Commanders: " + commanders);
+        break;
+
+        case "version":
+            bot.chat(dunderBotPlayerVersion);
         break;
 
         //Manners
@@ -87,9 +91,12 @@ function parseMessage(bot, username, msg) {
            console.log("---------------");
            console.log(bot.teamMap);
        break;
-
+            case "e":
+                bot.masterState = "idle";
+            break;
 
             case "goto":
+                bot.masterState = "pathfinding";
                 var validSyntax = false;
                 var findPathX = 0, findPathY = 0, findPathZ = 0;
                     if (msg[1] == "me") {
@@ -127,10 +134,27 @@ function parseMessage(bot, username, msg) {
                     console.log("Finding path. My current position is X: " + Math.floor(bot.entity.position.x) + 
                          ", Y: " + Math.floor(bot.entity.position.y) +
                          ", Z: " + Math.floor(bot.entity.position.z));
-                    findPath(bots[0], 500, findPathX, findPathY, findPathZ);
+                    if (findPathZ != undefined) {
+                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false};
+                    } else {
+                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false};
+                    }
+                    findPath(bot, 500, findPathX, findPathY, findPathZ);
                     //bot.entity.position.x = Math.floor(bot.entity.position.x) + 0.5;
                     //bot.entity.position.z = Math.floor(bot.entity.position.z) + 0.5;
                 }
+            break;
+
+
+
+
+case "standingin":
+                console.log(JSON.stringify(bot.blockAt(
+                            new Vec3(Math.floor(bot.entity.position.x), Math.floor(bot.entity.position.y), Math.floor(bot.entity.position.z))
+                )));
+                console.log("is it standable? " + blockStand(bot, Math.floor(bot.entity.position.x), Math.floor(bot.entity.position.y), Math.floor(bot.entity.position.z)));
+                console.log("Fists: " + getDigTime(bot, Math.floor(bot.entity.position.x), Math.floor(bot.entity.position.y), Math.floor(bot.entity.position.z), false, false));
+                console.log("Sharpest Tool: " + getDigTime(bot, Math.floor(bot.entity.position.x), Math.floor(bot.entity.position.y), Math.floor(bot.entity.position.z), false, true));
             break;
     }
   }

@@ -27,7 +27,7 @@ function takeCareOfBlock (bot, myMove) {
                 digBlock(bot, myMove.x, Math.floor(bot.entity.position.y - 0.2), myMove.z);
                 bot.dunder.isDigging = 2;
                 console.log("DigDown FreeStyle");
-            } else if ((bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) & bot.entity.position.y >= myMove.y - 0.25 & bot.entity.position.y <= myMove.y + 0.25 | isSwim(myMove.mType) && !bot.targetDigBlock /*&& botDigDelay <= 0*/) {
+            } else if ((bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) /*& bot.entity.position.y >= myMove.y - 0.25 & bot.entity.position.y <= myMove.y + 0.25*/ | isSwim(myMove.mType) && !bot.targetDigBlock /*&& botDigDelay <= 0*/) {
                 //console.log("DigForward?");
                 if (blockSolid(bot, myMove.x, myMove.y + 1, myMove.z) &&
                     canDigBlock(bot, myMove.x, myMove.y + 1, myMove.z) ) {
@@ -35,8 +35,8 @@ function takeCareOfBlock (bot, myMove) {
                     equipTool(bot, myMove.x, myMove.y + 1, myMove.z);
                     //console.log(bot.blockAt(new Vec3(myMove.x, myMove.y + 1, myMove.z)));
                     digBlock(bot, myMove.x, myMove.y + 1, myMove.z);
-                    botMove.forward = false;
-                    botMove.sprint = false;
+                    bot.dunder.botMove.forward = false;
+                    bot.dunder.botMove.sprint = false;
                     bot.dunder.isDigging = 2;
                     busyBuilding = true;
                 } else if (!blockWalk(bot, myMove.x, myMove.y, myMove.z) && blockSolid(bot, myMove.x, myMove.y, myMove.z) &&
@@ -44,22 +44,23 @@ function takeCareOfBlock (bot, myMove) {
                     console.log("DigForward B");
                     equipTool(bot, myMove.x, myMove.y, myMove.z);
                     digBlock(bot, myMove.x, myMove.y, myMove.z);
-                    botMove.forward = false;
-                    botMove.sprint = false;
+                    bot.dunder.botMove.forward = false;
+                    bot.dunder.botMove.sprint = false;
                     bot.dunder.isDigging = 2;
                     busyBuilding = true;
                 }
-            } else if ((bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) & bot.entity.position.y >= myMove.y - 1.25 & bot.entity.position.y <= myMove.y + 0.25 | isSwim(myMove.mType) && !bot.targetDigBlock /*&& botDigDelay <= 0*/) {
+            } 
+            if ((bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) & bot.entity.position.y >= myMove.y - 1.25 & bot.entity.position.y <= myMove.y + 0.25 | isSwim(myMove.mType) && !bot.targetDigBlock /*&& botDigDelay <= 0*/) {
                 //console.log("DigForward?");
-                if (blockSolid(bot, Math.floor(bot.dunder.lastPos.x), myMove.y + 1, Math.floor(bot.dunder.lastPos.z)) &&
+                if (bot.dunder.lastPos.y == myMove.y - 1 && blockSolid(bot, Math.floor(bot.dunder.lastPos.x), myMove.y + 1, Math.floor(bot.dunder.lastPos.z)) &&
                     canDigBlock(bot, Math.floor(bot.dunder.lastPos.x), myMove.y + 1, Math.floor(bot.dunder.lastPos.z)) ) {
                     console.log("Dig Up A");
                     equipTool(bot, Math.floor(bot.dunder.lastPos.x), myMove.y + 1, Math.floor(bot.dunder.lastPos.z));
                     //console.log(bot.blockAt(new Vec3(myMove.x, myMove.y + 1, myMove.z)));
                     digBlock(bot, Math.floor(bot.dunder.lastPos.x), myMove.y + 1, Math.floor(bot.dunder.lastPos.z));
-                    botMove.forward = false;
-                    botMove.sprint = false;
-                    botMove.jump = false;
+                    bot.dunder.botMove.forward = false;
+                    bot.dunder.botMove.sprint = false;
+                    bot.dunder.botMove.jump = false;
                     bot.dunder.isDigging = 2;
                     busyBuilding = true;
                 } else if (blockSolid(bot, myMove.x, myMove.y + 1, myMove.z) &&
@@ -68,9 +69,9 @@ function takeCareOfBlock (bot, myMove) {
                     equipTool(bot, myMove.x, myMove.y + 1, myMove.z);
                     //console.log(bot.blockAt(new Vec3(myMove.x, myMove.y + 1, myMove.z)));
                     digBlock(bot, myMove.x, myMove.y + 1, myMove.z);
-                    botMove.forward = false;
-                    botMove.sprint = false;
-                    botMove.jump = false;
+                    bot.dunder.botMove.forward = false;
+                    bot.dunder.botMove.sprint = false;
+                    bot.dunder.botMove.jump = false;
                     bot.dunder.isDigging = 2;
                     busyBuilding = true;
                 } else if (!blockWalk(bot, myMove.x, myMove.y, myMove.z) && blockSolid(bot, myMove.x, myMove.y, myMove.z) &&
@@ -78,9 +79,9 @@ function takeCareOfBlock (bot, myMove) {
                     console.log("Dig Up C");
                     equipTool(bot, myMove.x, myMove.y, myMove.z);
                     digBlock(bot, myMove.x, myMove.y, myMove.z);
-                    botMove.forward = false;
-                    botMove.sprint = false;
-                    botMove.jump = false;
+                    bot.dunder.botMove.forward = false;
+                    bot.dunder.botMove.sprint = false;
+                    bot.dunder.botMove.jump = false;
                     bot.dunder.isDigging = 2;
                     busyBuilding = true;
                 }
@@ -89,17 +90,17 @@ function takeCareOfBlock (bot, myMove) {
                 myMove.y == bot.dunder.lastPos.y & dist3d(bot.entity.position.x, 0, bot.entity.position.z, myMove.x + 0.5, 0, myMove.z + 0.5) <= Math.sqrt(0.5) /*|
                 myMove.y != bot.dunder.lastPos.y & dist3d(bot.entity.position.x, 0, bot.entity.position.z, myMove.x + 0.5, 0, myMove.z + 0.5) <= dist3d(0, 0, 0, 3, 3, 3)*/) {
                 //console.log("asdf");
-                botMove.forward = false;
-                botMove.sprint = false;
-                botMove.sneak = true;
-                if (dist3d(bot.entity.position.x, 0, bot.entity.position.z, bot.dunder.lastPos.x + 0.5, 0, bot.dunder.lastPos.z + 0.5) >= Math.sqrt(0.35)) {botMove.back = true;}
+                bot.dunder.botMove.forward = false;
+                bot.dunder.botMove.sprint = false;
+                bot.dunder.botMove.sneak = true;
+                if (dist3d(bot.entity.position.x, 0, bot.entity.position.z, bot.dunder.lastPos.x + 0.5, 0, bot.dunder.lastPos.z + 0.5) >= Math.sqrt(0.35)) {bot.dunder.botMove.back = true;}
                 if (breakAndPlaceBlock(bot, myMove.x, myMove.y - 1, myMove.z, true)) {
                     equipTool(bot, myMove.x, myMove.y - 1, myMove.z);
                     digBlock(bot, myMove.x, myMove.y - 1, myMove.z);
                     console.log("just a sec before bridging...");
                     busyBuilding = true;
                 } else if (!bot.targetDigBlock && myMove.mType != "fall") {
-                    console.log("e");
+                    //console.log("e");
                     equipItem(bot, garbageBlocks, "hand");
                     //holdWeapon = false;
                     placeBlock(bot, myMove.x, myMove.y - 1, myMove.z, false/*(myMove.y != bot.dunder.lastPos.y) ? Math.atan2(myMove.x - bot.dunder.lastPos.x, bot.dunder.lastPos.z - myMove.z) : undefined*/);
@@ -107,16 +108,16 @@ function takeCareOfBlock (bot, myMove) {
                         bot.entity.position.x = bot.dunder.lastPos.x + 0.5;
                         bot.entity.position.z = bot.dunder.lastPos.z + 0.5;
                     }*/
-                    console.log("placeblock");
+                    //console.log("placeblock");
                     busyBuilding = true;
-                    botMove.faceBackwards = 4;
+                    bot.dunder.botMove.faceBackwards = 4;
                 }
             }
             if (myMove.mType == "goUp") {
-                botMove.sprint = false;
-                botMove.jump = false;
-                if (bot.entity.position.y <= myMove.y - 0.25 && bot.entity.onGround) {
-                    botMove.jump = true;
+                bot.dunder.botMove.sprint = false;
+                bot.dunder.botMove.jump = false;
+                if (bot.entity.isInWater || bot.entity.position.y <= myMove.y - 0.25 && bot.entity.onGround) {
+                    bot.dunder.botMove.jump = true;
                 }
                 //console.log((bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) + ", " + blockSolid(bot, myMove.x, myMove.y + 1, myMove.z) + ", " + canDigBlock(bot, myMove.x, myMove.y + 1, myMove.z));
                 if (/*(bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) &&*/ blockSolid(bot, myMove.x, myMove.y + 1, myMove.z) && canDigBlock(bot, myMove.x, myMove.y + 1, myMove.z)) {
@@ -124,18 +125,19 @@ function takeCareOfBlock (bot, myMove) {
                     equipTool(bot, myMove.x, myMove.y + 1, myMove.z);
                     //console.log(bot.blockAt(new Vec3(myMove.x, myMove.y + 1, myMove.z)));
                     digBlock(bot, myMove.x, myMove.y + 1, myMove.z);
-                    botMove.forward = false;
-                    botMove.sprint = false;
-                    botMove.jump = false;
+                    bot.dunder.botMove.forward = false;
+                    bot.dunder.botMove.sprint = false;
+                    bot.dunder.botMove.jump = false;
                     bot.dunder.isDigging = 2;
                     busyBuilding = true;
                 } else if (breakAndPlaceBlock(bot, myMove.x, myMove.y - 1, myMove.z, true)) {
                     equipTool(bot, myMove.x, myMove.y - 1, myMove.z);
-                    //digBlock(bot, myMove.x, myMove.y - 1, myMove.z);
+                    digBlock(bot, myMove.x, myMove.y - 1, myMove.z);
                     console.log("just a sec before pillaring...");
+                    bot.dunder.botMove.jump = false;
                     busyBuilding = true;
                 } else if (bot.entity.position.y > myMove.y - 1 && (blockAir(bot, myMove.x, myMove.y - 1, myMove.z) || blockAir(bot, myMove.x, myMove.y, myMove.z))) {
-                    botMove.jump = true;
+                    bot.dunder.botMove.jump = true;
                     equipItem(bot, garbageBlocks, "hand");
                     //holdWeapon = false;
                     placeBlock(bot, myMove.x, myMove.y - 1, myMove.z, false/*(myMove.y != bot.dunder.lastPos.y) ? Math.atan2(myMove.x - bot.dunder.lastPos.x, bot.dunder.lastPos.z - myMove.z) : undefined*/);
@@ -145,7 +147,7 @@ function takeCareOfBlock (bot, myMove) {
 };
 
 
-        var botMove = {
+        /*var bot.dunder.botMove = {
             "forward":false,
             "back":false,
             "left":false,
@@ -159,13 +161,14 @@ function takeCareOfBlock (bot, myMove) {
             "bucketTimer":0,
             "bucketTarget":{x:0,y:0,z:0},
             "lastTimer":-10,
-        };
+        };*/
         var botIsDigging = false;
         var myWalkAngle = 0;
         var myAngle = 0;
 
 function strictFollow(bot) {
-        botMove = {
+    try {
+        bot.dunder.botMove = {
             "forward":false,
             "back":false,
             "left":false,
@@ -173,25 +176,27 @@ function strictFollow(bot) {
             "sneak":false,
             "sprint":false,
             "jump":false,
-            "isGrounded":botMove.isGrounded,
-            "faceBackwards":botMove.faceBackwards - 1,
-            "mlg":botMove.mlg - 1,
-            "bucketTimer":botMove.bucketTimer - 1,
-            "bucketTarget":{x:botMove.bucketTarget.x,y:botMove.bucketTarget.y,z:botMove.bucketTarget.z},
-            "lastTimer":botMove.lastTimer,
+            "isGrounded":bot.dunder.botMove.isGrounded,
+            "faceBackwards":bot.dunder.botMove.faceBackwards - 1,
+            "mlg":bot.dunder.botMove.mlg - 1,
+            "bucketTimer":bot.dunder.botMove.bucketTimer - 1,
+            "bucketTarget":{x:bot.dunder.botMove.bucketTarget.x,y:bot.dunder.botMove.bucketTarget.y,z:bot.dunder.botMove.bucketTarget.z},
+            "lastTimer":bot.dunder.botMove.lastTimer,
         };
-        if (botMove.mlg < -100) {botMove.mlg = -100;}
-        if (botMove.bucketTimer < -100) {botMove.bucketTimer = -100;}
-        if (botMove.faceBackwards < -100) {botMove.faceBackwards = -100;}
+        if (bot.dunder.botMove.mlg < -100) {bot.dunder.botMove.mlg = -100;}
+        if (bot.dunder.botMove.bucketTimer < -100) {bot.dunder.botMove.bucketTimer = -100;}
+        if (bot.dunder.botMove.faceBackwards < -100) {bot.dunder.botMove.faceBackwards = -100;}
         var botSpeed = Math.sqrt(bot.entity.velocity.x * bot.entity.velocity.x + bot.entity.velocity.z * bot.entity.velocity.z);
 
 
 
-        if (movesToGo.length > 0 && bot.dunder.lastPos.currentMove >= 0) {
-            var myMove = movesToGo[bot.dunder.lastPos.currentMove];
-            //console.log("e" + movesToGo.length + ", " + bot.dunder.lastPos.currentMove);
-            bot.chat("/particle damage_indicator " + movesToGo[bot.dunder.lastPos.currentMove].x + " " + movesToGo[bot.dunder.lastPos.currentMove].y + " " + movesToGo[bot.dunder.lastPos.currentMove].z);
-            bot.chat("/particle heart " + bot.dunder.lastPos.x + " " + bot.dunder.lastPos.y + " " + bot.dunder.lastPos.z);
+        if (bot.dunder.movesToGo.length > 0 && bot.dunder.lastPos.currentMove >= 0) {
+            var myMove = bot.dunder.movesToGo[bot.dunder.lastPos.currentMove];
+            //console.log("e" + bot.dunder.movesToGo.length + ", " + bot.dunder.lastPos.currentMove);
+            if (bot.dunder.chatParticles) {
+                bot.chat("/particle damage_indicator " + bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x + " " + bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y + " " + bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z);
+                bot.chat("/particle heart " + bot.dunder.lastPos.x + " " + bot.dunder.lastPos.y + " " + bot.dunder.lastPos.z);
+            }
             var goalBox = {"x":myMove.x, "y":myMove.y, "z":myMove.z, "w":1, "h":2, "d":1};
             var onPathBoxes = [];
             if (Math.floor(bot.dunder.lastPos.y) == myMove.y) {
@@ -269,7 +274,7 @@ function strictFollow(bot) {
                 goalBox.y -= 0.5;
                 goalBox.h += 1;
             }
-            //onPathBoxes.push({"x":movesToGo[movesToGo.length - 1].x - 0.5, "y":movesToGo[movesToGo.length - 1].y - 0.5, "z":movesToGo[movesToGo.length - 1].z - 0.5, "w":2, "h":3, "d":2});
+            //onPathBoxes.push({"x":bot.dunder.movesToGo[bot.dunder.movesToGo.length - 1].x - 0.5, "y":bot.dunder.movesToGo[bot.dunder.movesToGo.length - 1].y - 0.5, "z":bot.dunder.movesToGo[bot.dunder.movesToGo.length - 1].z - 0.5, "w":2, "h":3, "d":2});
 
             onPath = false;
             for (var i = 0; i < onPathBoxes.length; i++) {
@@ -290,9 +295,11 @@ function strictFollow(bot) {
                 onPath = false;
             }
             if (!onPath) {
-                //console.log("GET BACK IN FORMATION SOLDIER");
-                if ((bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) && movesToGo.length > 0 && bot.dunder.searchingPath < 0) {
-                    findPath(bot, movesToGo[0].x, movesToGo[0].y, movesToGo[0].z, true);
+                ///console.log("GET BACK IN FORMATION SOLDIER");
+                if ((bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) && bot.dunder.movesToGo.length > 0 && bot.dunder.searchingPath < 0) {
+                    console.log("OK");
+                    console.log(bot.dunder.movesToGo[0]);
+                    findPath(bot, 500, bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z, true);
                 }
             } //else {console.log(bot.dunder.destinationTimer);}
 
@@ -318,9 +325,20 @@ function strictFollow(bot) {
             }
 
             if (true) {
-                botMove.forward = true;
-                botMove.sprint = pathfinderOptions.sprint;
-                if (bot.targetDigBlock) {botMove.forward = false;}
+                bot.dunder.botMove.forward = true;
+                bot.dunder.botMove.sprint = pathfinderOptions.sprint;
+                if (bot.targetDigBlock) {
+                    bot.dunder.botMove.forward = false;
+                    bot.dunder.botMove.sprint = false;
+                    //bot.entity.velocity.x = 0;
+                    //bot.entity.velocity.z = 0;
+                    var stayStill = attemptToStayStill(bot, bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5);
+                     bot.dunder.botMove.forward = stayStill.forward;
+                     bot.dunder.botMove.back = stayStill.back;
+                     bot.dunder.botMove.left = stayStill.left;
+                     bot.dunder.botMove.right = stayStill.right;
+                     console.log(JSON.stringify(stayStill));
+                }
             }
 
             var jumpDir = {"x":(Math.floor(bot.dunder.lastPos.x) > myMove.x) ? -1 : 1, "z": (Math.floor(bot.dunder.lastPos.z) > myMove.z) ? -1 : 1};
@@ -359,42 +377,45 @@ function strictFollow(bot) {
                 bot.dunder.isDigging = 2;
                 console.log("DigDown FreeStyle");
             }*/
-            if (bot.dunder.isDigging <= 0 && (myMove.mType == "walkJump" || myMove.mType == "walkDiagJump") && bot.entity.onGround && bot.entity.position.y < bot.dunder.lastPos.y + 1) {
+            if (bot.dunder.isDigging <= 0 && (myMove.mType == "walkJump" || myMove.mType == "walkDiagJump") && (bot.entity.onGround || bot.entity.isInWater) && bot.entity.position.y < bot.dunder.lastPos.y + 1) {
+              if (!bot.entity.isInWater) {
                 if (Math.abs(myMove.x - bot.dunder.lastPos.x) == 2 || Math.abs(myMove.z - bot.dunder.lastPos.z) == 2) {
                     //don't sprint on 1 block gaps
-                    botMove.sprint = false;
+                    bot.dunder.botMove.sprint = false;
                     //console.log("Slow down!");
                 } else if ((Math.abs(myMove.x - bot.dunder.lastPos.x) >= 4 || Math.abs(myMove.z - bot.dunder.lastPos.z) >= 4)) {
                     console.log(bot.entity.onGround + ", " + botSpeed);
-                    if (botSpeed < 0.125 && bot.dunder.needsSpeed <= -10) {
+                    if (botSpeed < 0.13 && bot.dunder.needsSpeed <= -10) {
                         bot.dunder.needsSpeed = 5;
                     }
                 }
-                var speedEdgeGap = 0.2
+                var speedEdgeGap = 0.2;
+                var speedEdgeGap2 = 0.25;
                 if (bot.dunder.needsSpeed <= 0 && ((Math.abs(myMove.x - bot.dunder.lastPos.x) == 1 || Math.abs(myMove.z - bot.dunder.lastPos.z) == 1) && myMove.y > bot.dunder.lastPos.y ||
                     dist3d(bot.entity.position.x, 0, bot.entity.position.z, myMove.x + 0.5, 0, myMove.z + 0.5) > Math.sqrt(2) &&
                     (jumpDir.x == 0 ||
-                    jumpDir.x > 0 & bot.entity.position.x >= bot.dunder.lastPos.x + 0.5 + jumpDir.x * speedEdgeGap ||
-                    jumpDir.x < 0 & bot.entity.position.x <= bot.dunder.lastPos.x + 0.5 + jumpDir.x * speedEdgeGap) &&
+                    jumpDir.x > 0 & bot.entity.position.x >= bot.dunder.lastPos.x + 0.5 + jumpDir.x * speedEdgeGap2 ||
+                    jumpDir.x < 0 & bot.entity.position.x <= bot.dunder.lastPos.x + 0.5 + jumpDir.x * speedEdgeGap2) &&
                     (jumpDir.z == 0 ||
-                    jumpDir.z > 0 & bot.entity.position.z >= bot.dunder.lastPos.z + 0.5 + jumpDir.z * speedEdgeGap ||
-                    jumpDir.z < 0 & bot.entity.position.z <= bot.dunder.lastPos.z + 0.5 + jumpDir.z * speedEdgeGap))) {
-                    botMove.jump = true;
+                    jumpDir.z > 0 & bot.entity.position.z >= bot.dunder.lastPos.z + 0.5 + jumpDir.z * speedEdgeGap2 ||
+                    jumpDir.z < 0 & bot.entity.position.z <= bot.dunder.lastPos.z + 0.5 + jumpDir.z * speedEdgeGap2))) {
+                    bot.dunder.botMove.jump = true;
                 } else if (bot.dunder.needsSpeed >= 0 && (jumpDir.x == 0 ||
                     jumpDir.x > 0 & bot.entity.position.x >= bot.dunder.lastPos.x + 0.5 - jumpDir.x * speedEdgeGap ||
                     jumpDir.x < 0 & bot.entity.position.x <= bot.dunder.lastPos.x + 0.5 - jumpDir.x * speedEdgeGap) &&
                     (jumpDir.z == 0 ||
                     jumpDir.z > 0 & bot.entity.position.z >= bot.dunder.lastPos.z + 0.5 - jumpDir.z * speedEdgeGap ||
                     jumpDir.z < 0 & bot.entity.position.z <= bot.dunder.lastPos.z + 0.5 - jumpDir.z * speedEdgeGap)) {
-                    botMove.forward = false;
-                    botMove.sprint = false;
-                    botMove.back = true;
+                    bot.dunder.botMove.forward = false;
+                    bot.dunder.botMove.sprint = false;
+                    bot.dunder.botMove.back = true;
                 }
+              } else {bot.dunder.botMove.jump = true;}
                 //Strafe correction
 
                     var shouldStrafeCorrect = true;
                     for (var i = bot.dunder.lastPos.currentMove; i > bot.dunder.lastPos.currentMove - 5 && i > 0; i--) {
-                        if (!movesToGo[i + 1] || movesToGo[i + 1] && movesToGo[i].y <= movesToGo[i + 1].y) {
+                        if (!bot.dunder.movesToGo[i + 1] || bot.dunder.movesToGo[i + 1] && bot.dunder.movesToGo[i].y <= bot.dunder.movesToGo[i + 1].y) {
                             shouldStrafeCorrect = false;
                         }
                     }
@@ -411,27 +432,55 @@ function strictFollow(bot) {
                         Math.abs(myMove.x - bot.dunder.lastPos.x) >= 2 | Math.abs(myMove.z - bot.dunder.lastPos.z) >= 2 && bot.entity.position.y < myMove.y - 0.2) {//qwerty
                         if (myMove.y > bot.dunder.lastPos.y && myWalkAngle - myAngle > 0.25) {
                             console.log("R");
-                            botMove.right = true;
+                            bot.dunder.botMove.right = true;
                         } else if (myMove.y > bot.dunder.lastPos.y && myWalkAngle - myAngle < -0.25) {
                             console.log("L");
-                            botMove.left = true;
+                            bot.dunder.botMove.left = true;
                         }
                     }
 
 
+            } else if (myMove.mType == "swimSlow") {
+                shouldSwimFast = false;
+                bot.dunder.botMove.forward = true;
+                if (bot.entity.position.y < myMove.y + slabSwimTarget(bot, myMove.x, myMove.y, myMove.z) || bot.entity.position.y < myMove.y + 1.5 && !blockWater(bot, myMove.x, myMove.y + 1, myMove.z)) {
+                    bot.dunder.botMove.jump = true;
+                } else if (bot.entity.position.y > myMove.y + 0.2 + slabSwimTarget(bot, myMove.x, myMove.y, myMove.z) && blockWater(bot, myMove.x, myMove.y + 1, myMove.z)) {
+                    bot.dunder.botMove.sneak = true;
+                    if (bot.entity.velocity.y > -1.0) {bot.entity.velocity.y -= 0.01;}
+                }
+            } else if (myMove.mType == "swimFast" || myMove.mType == "fallWater") {
+                if (bot.entity.position.y > myMove.y + 0.3 + slabSwimTarget(bot, myMove.x, myMove.y, myMove.z) &&
+                    bot.entity.velocity.y > -1.0 /*&& bot.entity.velocity.y < (bot.entity.position.y - (bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y + 0.2)) / 2*/) {
+                    bot.entity.velocity.y -= 0.05;
+                    //console.log("swimDown");
+                } else if (bot.entity.position.y < myMove.y + 0.1 + slabSwimTarget(bot, myMove.x, myMove.y, myMove.z) && bot.entity.velocity.y < 1.0) {
+                    bot.entity.velocity.y += 0.05;
+                    //console.log("swimUp");
+                }
+                var myMoveDir = {x:myMove.x - bot.dunder.lastPos.x, z:myMove.z - bot.dunder.lastPos.z};
+                if (blockLilypad(bot, myMove.x, myMove.y + 2, myMove.z)) {
+                    digBlock(bot, myMove.x, myMove.y + 2, myMove.z);
+                } else if (blockLilypad(bot, myMove.x - myMoveDir.x, myMove.y + 2, myMove.z)) {
+                    digBlock(bot, myMove.x - myMoveDir.x, myMove.y + 2, myMove.z);
+                } else if (blockLilypad(bot, myMove.x, myMove.y + 2, myMove.z - myMoveDir.z)) {
+                    digBlock(bot, myMove.x, myMove.y + 2, myMove.z - myMoveDir.z);
+                }
+            } else if (myMove.mType == "lava" && bot.entity.position.y < bot.dunder.movesToGo[lastPos.currentMove].y + slabSwimTarget(bot, myMove.x, myMove.y, myMove.z)) {
+                bot.dunder.botMove.jump = true;
             }
 
 
 
 
                 var lastPosSameAmount = true;
-                if (movesToGo[bot.dunder.lastPos.currentMove - 1]) {
-                    if (Math.abs(movesToGo[bot.dunder.lastPos.currentMove - 1].x - myMove.x) > 1 |
-                        Math.abs(movesToGo[bot.dunder.lastPos.currentMove - 1].z - myMove.z) > 1 |
-                        ((movesToGo[bot.dunder.lastPos.currentMove - 1].x - myMove.x) > 0) != ((myMove.x - bot.dunder.lastPos.x) > 0) |
-                        ((movesToGo[bot.dunder.lastPos.currentMove - 1].z - myMove.z) > 0) != ((myMove.z - bot.dunder.lastPos.z) > 0) |
-                        ((movesToGo[bot.dunder.lastPos.currentMove - 1].x - myMove.x) < 0) != ((myMove.x - bot.dunder.lastPos.x) < 0) |
-                        ((movesToGo[bot.dunder.lastPos.currentMove - 1].z - myMove.z) < 0) != ((myMove.z - bot.dunder.lastPos.z) < 0)) {
+                if (bot.dunder.movesToGo[bot.dunder.lastPos.currentMove - 1]) {
+                    if (Math.abs(bot.dunder.movesToGo[bot.dunder.lastPos.currentMove - 1].x - myMove.x) > 1 |
+                        Math.abs(bot.dunder.movesToGo[bot.dunder.lastPos.currentMove - 1].z - myMove.z) > 1 |
+                        ((bot.dunder.movesToGo[bot.dunder.lastPos.currentMove - 1].x - myMove.x) > 0) != ((myMove.x - bot.dunder.lastPos.x) > 0) |
+                        ((bot.dunder.movesToGo[bot.dunder.lastPos.currentMove - 1].z - myMove.z) > 0) != ((myMove.z - bot.dunder.lastPos.z) > 0) |
+                        ((bot.dunder.movesToGo[bot.dunder.lastPos.currentMove - 1].x - myMove.x) < 0) != ((myMove.x - bot.dunder.lastPos.x) < 0) |
+                        ((bot.dunder.movesToGo[bot.dunder.lastPos.currentMove - 1].z - myMove.z) < 0) != ((myMove.z - bot.dunder.lastPos.z) < 0)) {
                         lastPosSameAmount = false;
                     }
                 }
@@ -443,28 +492,35 @@ function strictFollow(bot) {
                 bot.entity.position.y < goalBox.y + 2 && bot.entity.position.y + 2 >= goalBox.y &&
                 bot.entity.position.z + 0.2 < goalBox.z + 1 && bot.entity.position.z - 0.2 > goalBox.z) {
                 bot.dunder.lastPos = {"currentMove":bot.dunder.lastPos.currentMove - 1, "x":myMove.x, "y":myMove.y, "z":myMove.z, "mType":myMove.mType};
-                botMove.jump = false;
-                botMove.lastTimer = 1;
-                if (bot.dunder.lastPos.currentMove < movesToGo.length - 2) {movesToGo.splice(bot.dunder.lastPos.currentMove + 1, movesToGo.length);}
+                bot.dunder.botMove.jump = false;
+                bot.dunder.botMove.lastTimer = 1;
+                if (bot.dunder.lastPos.currentMove < bot.dunder.movesToGo.length - 2) {bot.dunder.movesToGo.splice(bot.dunder.lastPos.currentMove + 1, bot.dunder.movesToGo.length);}
                 bot.dunder.destinationTimer = 30;
-                //movesToGo.splice(movesToGo.length - 1, 1);
+                //bot.dunder.movesToGo.splice(bot.dunder.movesToGo.length - 1, 1);
             }
-                if (botMove.faceBackwards <= 0) {
+                if (bot.dunder.botMove.faceBackwards <= 0) {
                     bot.lookAt(new Vec3(myMove.x + 0.5, bot.dunder.lookY, myMove.z + 0.5), true);
                 } else {
-                    botMove.forward = !botMove.forward;
-                    botMove.back = !botMove.back;
-                    if (movesToGo[bot.dunder.lastPos.currentMove]) {
+                    bot.dunder.botMove.forward = !bot.dunder.botMove.forward;
+                    bot.dunder.botMove.back = !bot.dunder.botMove.back;
+                    if (bot.dunder.movesToGo[bot.dunder.lastPos.currentMove]) {
                         bot.lookAt(new Vec3(
-                               bot.entity.position.x + (bot.entity.position.x - (movesToGo[bot.dunder.lastPos.currentMove].x + 0.5)),
+                               bot.entity.position.x + (bot.entity.position.x - (bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x + 0.5)),
                                bot.dunder.lookY,
-                               bot.entity.position.z + (bot.entity.position.z - (movesToGo[bot.dunder.lastPos.currentMove].z + 0.5))),
+                               bot.entity.position.z + (bot.entity.position.z - (bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z + 0.5))),
                         25);
                     }
                 }
-            //console.log(movesToGo[bot.dunder.lastPos.currentMove]);
+            //console.log(bot.dunder.movesToGo[bot.dunder.lastPos.currentMove]);
         } else {
             onPath = false;
+            if (dist3d(bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5, bot.entity.position.x, bot.entity.position.y, bot.entity.position.z) < 2) {
+                var stayStill = attemptToStayStill(bot, bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5);
+                bot.dunder.botMove.forward = stayStill.forward;
+                bot.dunder.botMove.back = stayStill.back;
+                bot.dunder.botMove.left = stayStill.left;
+                bot.dunder.botMove.right = stayStill.right;
+            }
         }
         if (!bot.targetDigBlock) {
             bot.dunder.lookY = bot.entity.position.y + 1.6;
@@ -472,32 +528,145 @@ function strictFollow(bot) {
             bot.dunder.lookY = bot.targetDigBlock.position.y;
         }
 
-            if (bot.entity.onGround && botMove.jump) {
+            if (bot.entity.onGround && bot.dunder.botMove.jump) {
                 myAngle = Math.atan2(myMove.x - bot.dunder.lastPos.x, bot.dunder.lastPos.z - myMove.z);
                 myWalkAngle = Math.atan2(myMove.x - bot.entity.position.x + 0.5, bot.entity.position.z - 0.5 - myMove.z);
                 //console.log("bot: " + bot.entity.yaw + "\npath: " + myAngle + "\ngoal: " + myWalkAngle);
                 //bot.entity.yaw = -myWalkAngle;
             }
 
-            bot.setControlState("jump", botMove.jump);
-            bot.setControlState("forward", botMove.forward);
-            bot.setControlState("back", botMove.back);
-            bot.setControlState("left", botMove.left);
-            bot.setControlState("right", botMove.right);
-            bot.setControlState("sprint", botMove.sprint);
-            //bot.setControlState("sneak", botMove.sneak);
-            bot.dunder.controls.sneak = botMove.sneak;
+
+        if (bot.entity.velocity.y < -0.3518 && bot.entity.velocity.y <= -0.5518) {
+            bot.dunder.lookY = bot.entity.position.y - 20;
+        if (bot.dunder.onFire && bot.entity.onGround || true) {
+            var fireCandidates = [false, false, false, false];
+            for (var i = 0; i < 23; i++) {
+                if (Math.floor(bot.entity.position.y) - i <= -64) {
+                    i = 23;
+                    break;
+                }
+                if (!fireCandidates[0] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001))) {
+                    fireCandidates[0] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001)));
+                }
+                if (!fireCandidates[1] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001))) {
+                    fireCandidates[1] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001)));
+                }
+                if (!fireCandidates[2] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001))) {
+                    fireCandidates[2] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001)));
+                }
+                if (!fireCandidates[3] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.301),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001))) {//(!!!)Probably need to account for negatives or something
+                    fireCandidates[3] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001)));
+                }
+            }
+            var myFireCandidate = -1;
+            for (var i = 0; i < fireCandidates.length; i++) {
+                if (fireCandidates[i] && (myFireCandidate == -1 || fireCandidates[i].position.y > fireCandidates[myFireCandidate].position.y)) {
+                    myFireCandidate = i;
+                }
+            }
+
+            if (myFireCandidate > -1 && fireCandidates[myFireCandidate]) {
+                myFireCandidate = fireCandidates[myFireCandidate];
+            }
+
+            equipItem(bot, ["water_bucket"]);
+            if (myFireCandidate && myFireCandidate.position) {
+                bot.lookAt(myFireCandidate.position.offset(0.5, 0, 0.5), 200);
+            }
+            //console.log(bot.entity.pitch);
+            if (myFireCandidate && bot.dunder.cursorBlock && bot.dunder.cursorBlock.position.equals(myFireCandidate.position) && dist3d(0, (bot.entity.position.y + 1.75), 0, 0, bot.dunder.cursorBlock.position.y, 0) <= 4.5 && bot.entity.heldItem && (bot.entity.heldItem.name == 'water_bucket') && bot.dunder.looktimer < 0) {
+                bot.activateItem(false);
+                bot.swingArm();
+                bot.dunder.looktimer = 1;
+                console.log("clutch pls");
+            } else if (!myFireCandidate) {console.log("no blocks");}
+        }
+        }
+
+            bot.setControlState("jump", bot.dunder.botMove.jump);
+            bot.setControlState("forward", bot.dunder.botMove.forward);
+            bot.setControlState("back", bot.dunder.botMove.back);
+            bot.setControlState("left", bot.dunder.botMove.left);
+            bot.setControlState("right", bot.dunder.botMove.right);
+            bot.setControlState("sprint", (bot.dunder.botMove.sprint &&  bot.dunder.botMove.forward));
+            //bot.setControlState("sneak", bot.dunder.botMove.sneak);
+            bot.dunder.controls.sneak = bot.dunder.botMove.sneak;
 
         //extend the path when near the end of a path that hasn't reached the goal yet due to chunk borders
-        if (bot.dunder.searchingPath <= 0 && !bot.dunder.goal.reached && movesToGo.length > 0 && movesToGo.length <= 10 && movesToGo[0].x != bot.dunder.goal.x | movesToGo[0].y != bot.dunder.goal.y & bot.dunder.goal.y != "no" | movesToGo[0].z != bot.dunder.goal.z) {
+        if (bot.dunder.searchingPath <= 0 && !bot.dunder.goal.reached && bot.dunder.movesToGo.length > 0 && bot.dunder.movesToGo.length <= 10 && bot.dunder.movesToGo[0].x != bot.dunder.goal.x | bot.dunder.movesToGo[0].y != bot.dunder.goal.y & bot.dunder.goal.y != "no" | bot.dunder.movesToGo[0].z != bot.dunder.goal.z) {
                 console.log("Extending path through chunks...");
                 if (bot.dunder.goal.y != "no") {
                     findPath(bot, 500, Math.floor(bot.dunder.goal.x), Math.round(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
+                    //console.log("uh....");
                 } else {
+                    //console.log("oqiwth....");
                     findPath(bot, 500, Math.floor(bot.dunder.goal.x), "no", Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
                 }
-        } else if (movesToGo.length > 0 && movesToGo.length <= 10) {
-            //console.log("searching: " + botSearchingPath + ", bot.dunder.goal: " + JSON.stringify(bot.dunder.goal) + ", movesToGo: " + movesToGo.length + ", movesToGo[0]: " + JSON.stringify(movesToGo[0]));
+        } else if (bot.dunder.movesToGo.length > 0 && bot.dunder.movesToGo.length <= 10) {
+            //console.log("searching: " + botSearchingPath + ", bot.dunder.goal: " + JSON.stringify(bot.dunder.goal) + ", bot.dunder.movesToGo: " + bot.dunder.movesToGo.length + ", bot.dunder.movesToGo[0]: " + JSON.stringify(bot.dunder.movesToGo[0]));
         }
+    } catch (e) {
+        console.log("strictFollow error \n" + e);
+        process.exit();
+    }
+};
 
+
+
+
+
+
+
+
+
+
+
+
+function attemptToStayStill(bot, x, y, z) {
+    var myStates = [
+        new PlayerState(bot, {forward: true, back: false, left: false, right: false, jump: false,sprint: false,sneak: false,}),
+        new PlayerState(bot, {forward: false, back: true, left: false, right: false, jump: false,sprint: false,sneak: false,}),
+        new PlayerState(bot, {forward: false, back: false, left: true, right: false, jump: false,sprint: false,sneak: false,}),
+        new PlayerState(bot, {forward: false, back: false, left: false, right: true, jump: false,sprint: false,sneak: false,}),
+        new PlayerState(bot, {forward: false, back: false, left: false, right: false, jump: false,sprint: false,sneak: false,}),
+    ];
+    //var myState = JSON.parse(JSON.stringify(stateBase));
+    //myState.pos = new Vec3(myState.pos.x, myState.pos.y, myState.pos.z);
+
+    for (var i = 0; i < 3; i++) {
+        for (var j = 0; j < myStates.length; j++) {
+            bot.physics.simulatePlayer(myStates[j], bot.world);
+        }
+    }
+    
+    var myBestState = 0;
+    for (var i = 1; i < myStates.length; i++) {
+        if (dist3d(myStates[i].pos.x, myStates[i].pos.y, myStates[i].pos.z, x, y, z) < dist3d(myStates[myBestState].pos.x, myStates[myBestState].pos.y, myStates[myBestState].pos.z, x, y, z)) {
+            myBestState = i;
+        }
+    }
+    
+    return [
+        {"forward":true,"back":false,"left":false,"right":false},
+        {"forward":false,"back":true,"left":false,"right":false},
+        {"forward":false,"back":false,"left":true,"right":false},
+        {"forward":false,"back":false,"left":false,"right":true},
+        {"forward":false,"back":false,"left":false,"right":false},
+    ][myBestState];
 };
