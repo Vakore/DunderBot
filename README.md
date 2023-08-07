@@ -8,6 +8,8 @@ A minecraft bot I am working on. It is not that smart at the moment, and breaks 
 Type 'goto (player)', 'goto (x) (y) (z)', or 'goto (x) (z)' to enter pathfinding mode and go to those coordinates
 Type 'e' to enter generic mode.
 
+To show pathfinding debug particles go to line 128 of dunderPlayer-main and change 'chatParticles' to true, make sure cheats are on.
+
 Version - Alpha 8/6/2023
 
 NOTE: Not all of these files are necessary to run the bot(the 'backup' and 'old' files), as these are backups for myself.
