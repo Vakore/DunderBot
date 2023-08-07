@@ -29,5 +29,6 @@ Generic Mode:
 Decent PvE, able to use shield, still WIP
 Auto eating, will not eat if there is a mob threat nearby, WIP
 Sprint jumping to follow the player. Eventually this and pathfind mode will be combined into one as a global movement mode, I've done this before in previous iterations of this project I'm just trying to get everything working at a passable level before implementing this
+WIP fire extinguishing with a water bucket.
 
 PvP and other things you might want aren't included yet.
