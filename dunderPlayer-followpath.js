@@ -167,7 +167,7 @@ function takeCareOfBlock (bot, myMove) {
         var myAngle = 0;
 
 function strictFollow(bot) {
-    try {
+    //try {
         bot.dunder.botMove = {
             "forward":false,
             "back":false,
@@ -294,12 +294,21 @@ function strictFollow(bot) {
             if (bot.dunder.destinationTimer < 0) {
                 onPath = false;
             }
+
+            //Jump sprinting on path(WIP)
+            if (bot.dunder.jumpTarget && bot.dunder.jumpTargetDelay <= 0 && bot.dunder.movesToGo.length > 2) {
+                bot.dunder.destinationTimer++;
+                onPath = true;
+            } else if (!bot.dunder.lastPosOnPath) {
+                onPath = false;
+            }
+
             if (!onPath) {
-                ///console.log("GET BACK IN FORMATION SOLDIER");
+                if (dunderDebug) {console.log("GET BACK IN FORMATION SOLDIER");}
                 if ((bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) && bot.dunder.movesToGo.length > 0 && bot.dunder.searchingPath < 0) {
-                    console.log("OK");
-                    console.log(bot.dunder.movesToGo[0]);
-                    findPath(bot, 500, bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z, true);
+                    //console.log("OK");
+                    if (dunderDebug) {console.log(bot.dunder.movesToGo[0]);}
+                    findPath(bot, 7500, bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z, true, false);
                 }
             } //else {console.log(bot.dunder.destinationTimer);}
 
@@ -337,7 +346,7 @@ function strictFollow(bot) {
                      bot.dunder.botMove.back = stayStill.back;
                      bot.dunder.botMove.left = stayStill.left;
                      bot.dunder.botMove.right = stayStill.right;
-                     console.log(JSON.stringify(stayStill));
+                     //console.log(JSON.stringify(stayStill));
                 }
             }
 
@@ -496,6 +505,7 @@ function strictFollow(bot) {
                 bot.dunder.botMove.lastTimer = 1;
                 if (bot.dunder.lastPos.currentMove < bot.dunder.movesToGo.length - 2) {bot.dunder.movesToGo.splice(bot.dunder.lastPos.currentMove + 1, bot.dunder.movesToGo.length);}
                 bot.dunder.destinationTimer = 30;
+                if (isSwim(bot.dunder.lastPos.moveType)) {bot.dunder.destinationTimer += 20;}
                 //bot.dunder.movesToGo.splice(bot.dunder.movesToGo.length - 1, 1);
             }
                 if (bot.dunder.botMove.faceBackwards <= 0) {
@@ -511,7 +521,7 @@ function strictFollow(bot) {
                         25);
                     }
                 }
-            //console.log(bot.dunder.movesToGo[bot.dunder.lastPos.currentMove]);
+            if (dunderDebug) {console.log(bot.dunder.movesToGo[bot.dunder.lastPos.currentMove]);}
         } else {
             onPath = false;
             if (dist3d(bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5, bot.entity.position.x, bot.entity.position.y, bot.entity.position.z) < 2) {
@@ -535,8 +545,8 @@ function strictFollow(bot) {
                 //bot.entity.yaw = -myWalkAngle;
             }
 
-
-        if (bot.entity.velocity.y < -0.3518 && bot.entity.velocity.y <= -0.5518) {
+        //disabling water clutching due to jump sprinting being WIP
+        if (false &&bot.entity.velocity.y < -0.3518 && bot.entity.velocity.y <= -0.5518) {
             bot.dunder.lookY = bot.entity.position.y - 20;
         if (bot.dunder.onFire && bot.entity.onGround || true) {
             var fireCandidates = [false, false, false, false];
@@ -599,6 +609,11 @@ function strictFollow(bot) {
         }
         }
 
+            //Jump sprinting on path(WIP)
+            if (bot.dunder.jumpSprintAlongPath) {
+                doJumpSprintStuff(bot);
+            }
+
             bot.setControlState("jump", bot.dunder.botMove.jump);
             bot.setControlState("forward", bot.dunder.botMove.forward);
             bot.setControlState("back", bot.dunder.botMove.back);
@@ -610,21 +625,21 @@ function strictFollow(bot) {
 
         //extend the path when near the end of a path that hasn't reached the goal yet due to chunk borders
         if (bot.dunder.searchingPath <= 0 && !bot.dunder.goal.reached && bot.dunder.movesToGo.length > 0 && bot.dunder.movesToGo.length <= 10 && bot.dunder.movesToGo[0].x != bot.dunder.goal.x | bot.dunder.movesToGo[0].y != bot.dunder.goal.y & bot.dunder.goal.y != "no" | bot.dunder.movesToGo[0].z != bot.dunder.goal.z) {
+                if (bot.targetDigBlock) {bot.stopDigging();}
                 console.log("Extending path through chunks...");
                 if (bot.dunder.goal.y != "no") {
-                    findPath(bot, 500, Math.floor(bot.dunder.goal.x), Math.round(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
+                    findPath(bot, 7400, Math.floor(bot.dunder.goal.x), Math.round(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
                     //console.log("uh....");
                 } else {
                     //console.log("oqiwth....");
-                    findPath(bot, 500, Math.floor(bot.dunder.goal.x), "no", Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
+                    findPath(bot, 7400, Math.floor(bot.dunder.goal.x), "no", Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
                 }
         } else if (bot.dunder.movesToGo.length > 0 && bot.dunder.movesToGo.length <= 10) {
             //console.log("searching: " + botSearchingPath + ", bot.dunder.goal: " + JSON.stringify(bot.dunder.goal) + ", bot.dunder.movesToGo: " + bot.dunder.movesToGo.length + ", bot.dunder.movesToGo[0]: " + JSON.stringify(bot.dunder.movesToGo[0]));
         }
-    } catch (e) {
-        console.log("strictFollow error \n" + e);
-        process.exit();
-    }
+    //} catch (e) {
+    //    console.error("strictFollow error \n" + e); 
+    //}
 };
 
 

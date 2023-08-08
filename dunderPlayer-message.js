@@ -4,12 +4,16 @@ function parseMessage(bot, username, msg) {
   if (commanders.includes(username)) {
     //console.log(username == "Vakore");
     switch (msg[0].toLowerCase()) {
+        case "help":
+            console.log("================================\nChat commands:\nsleep - find nearby bed and sleep in it\nwake - get out of bed\ne - enter 'generic' mode, does things like auto eat, PvE, following the player. Large work in progress.\ngoto <username> OR goto <x> <z> OR goto <x> <y> <z> - Pathfinds to a location using dunderPlayer-pathfind and exits 'generic' mode.\ntogglejump - toggles jump sprinting when following a path. Jump sprinting is a huge WIP. Defaults to on.\ngoto2 (for syntax see 'goto') - Pathfinds to a location using mineflayer-pathfinder. Can break other things, mainly for testing purposes.\nratfind (for syntax see 'goto') - uses and experimental feature that will probably never get used.\nversion - displays version in console.\n================================");
+        break;
+
         case "commands":
             bot.chat("Commanders: " + commanders);
         break;
 
         case "version":
-            bot.chat(dunderBotPlayerVersion);
+            console.log(dunderBotPlayerVersion);
         break;
 
         //Manners
@@ -91,12 +95,17 @@ function parseMessage(bot, username, msg) {
            console.log("---------------");
            console.log(bot.teamMap);
        break;
-            case "e":
-                bot.masterState = "idle";
-            break;
+       case "e":
+           bot.masterState = "idle";
+       break;
 
-            case "goto":
-                bot.masterState = "pathfinding";
+       case "togglejump":
+           bot.dunder.jumpSprintAlongPath = !bot.dunder.jumpSprintAlongPath;
+           console.log("jumpSprintAlongPath has been set from " + !bot.dunder.jumpSprintAlongPath + " to " + bot.dunder.jumpSprintAlongPath);
+       break;
+
+       case "ratfind":
+                bot.masterState = "ratfinding";//for mineflayer-pathfinder set to "pathfinding2"
                 var validSyntax = false;
                 var findPathX = 0, findPathY = 0, findPathZ = 0;
                     if (msg[1] == "me") {
@@ -139,7 +148,114 @@ function parseMessage(bot, username, msg) {
                     } else {
                         bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false};
                     }
-                    findPath(bot, 500, findPathX, findPathY, findPathZ);
+                    //mineflayer-pathfinder
+                    //bot.pathfinder.setMovements(defaultMove)
+                    //bot.pathfinder.setGoal(new GoalNear(findPathX, findPathY, findPathZ, 1))
+                    ratFind(bot, bot.entity.position.x, bot.entity.position.y, bot.entity.position.z, findPathX, findPathY, findPathZ);
+                }
+            break;
+
+            case "goto2":
+                bot.masterState = "pathfinding2";//for mineflayer-pathfinder set to "pathfinding2"
+                var validSyntax = false;
+                var findPathX = 0, findPathY = 0, findPathZ = 0;
+                    if (msg[1] == "me") {
+                        console.log("Finding you...");
+                        var playerTo = bot.players[username];
+                        if (playerTo && playerTo.entity) {
+                            findPathX = Math.floor(playerTo.entity.position.x);
+                            findPathY = Math.round(playerTo.entity.position.y);
+                            findPathZ = Math.floor(playerTo.entity.position.z);
+                            validSyntax = true;
+                        }
+                    } else if (msg.length == 2) {
+                        console.log("Finding " + msg[1] + "...");
+                        var playerTo = bot.players[msg[1]];
+                        if (playerTo && playerTo.entity) {
+                            findPathX = Math.floor(playerTo.entity.position.x);
+                            findPathY = Math.round(playerTo.entity.position.y);
+                            findPathZ = Math.floor(playerTo.entity.position.z);
+                            validSyntax = true;
+                        }
+                    } else if (msg.length >= 3) {
+                        findPathX = Math.floor(Number(msg[1]));
+                        findPathY = Math.round(Number(msg[2]));
+                        if (msg.length == 4) {
+                            findPathZ = Math.floor(Number(msg[3]));
+                        } else {
+                            findPathZ = undefined;
+                        }
+                        
+                        if (findPathX != NaN && findPathY != NaN/* && findPathZ != NaN*/) {
+                            validSyntax = true;
+                        }
+                    }
+                if (validSyntax) {
+                    console.log("Finding path. My current position is X: " + Math.floor(bot.entity.position.x) + 
+                         ", Y: " + Math.floor(bot.entity.position.y) +
+                         ", Z: " + Math.floor(bot.entity.position.z));
+                    if (findPathZ != undefined) {
+                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false};
+                    } else {
+                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false};
+                    }
+                    //mineflayer-pathfinder
+                    bot.pathfinder.setMovements(defaultMove)
+                    bot.pathfinder.setGoal(new GoalNear(findPathX, findPathY, findPathZ, 1))
+                    //findPath(bot, 4500, findPathX, findPathY, findPathZ);
+                    //bot.entity.position.x = Math.floor(bot.entity.position.x) + 0.5;
+                    //bot.entity.position.z = Math.floor(bot.entity.position.z) + 0.5;
+                }
+            break;
+
+            case "goto":
+                bot.masterState = "pathfinding";//for mineflayer-pathfinder set to "pathfinding2"
+                var validSyntax = false;
+                var findPathX = 0, findPathY = 0, findPathZ = 0;
+                    if (msg[1] == "me") {
+                        console.log("Finding you...");
+                        var playerTo = bot.players[username];
+                        if (playerTo && playerTo.entity) {
+                            findPathX = Math.floor(playerTo.entity.position.x);
+                            findPathY = Math.round(playerTo.entity.position.y);
+                            findPathZ = Math.floor(playerTo.entity.position.z);
+                            validSyntax = true;
+                        }
+                    } else if (msg.length == 2) {
+                        console.log("Finding " + msg[1] + "...");
+                        var playerTo = bot.players[msg[1]];
+                        if (playerTo && playerTo.entity) {
+                            findPathX = Math.floor(playerTo.entity.position.x);
+                            findPathY = Math.round(playerTo.entity.position.y);
+                            findPathZ = Math.floor(playerTo.entity.position.z);
+                            validSyntax = true;
+                        }
+                    } else if (msg.length >= 3) {
+                        findPathX = Math.floor(Number(msg[1]));
+                        findPathY = Math.round(Number(msg[2]));
+                        if (msg.length == 4) {
+                            findPathZ = Math.floor(Number(msg[3]));
+                        } else {
+                            findPathZ = undefined;
+                        }
+                        
+                        if (findPathX != NaN && findPathY != NaN/* && findPathZ != NaN*/) {
+                            validSyntax = true;
+                        }
+                    }
+                if (validSyntax) {
+                    console.log("Finding path. My current position is X: " + Math.floor(bot.entity.position.x) + 
+                         ", Y: " + Math.floor(bot.entity.position.y) +
+                         ", Z: " + Math.floor(bot.entity.position.z));
+                    if (findPathZ != undefined) {
+                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false};
+                    } else {
+                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false};
+                    }
+                    //mineflayer-pathfinder
+                    //bot.pathfinder.setMovements(defaultMove)
+                    //bot.pathfinder.setGoal(new GoalNear(findPathX, findPathY, findPathZ, 1))
+                    findPath(bot, 4500, findPathX, findPathY, findPathZ);
                     //bot.entity.position.x = Math.floor(bot.entity.position.x) + 0.5;
                     //bot.entity.position.z = Math.floor(bot.entity.position.z) + 0.5;
                 }

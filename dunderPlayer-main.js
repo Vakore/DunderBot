@@ -4,8 +4,9 @@ const version = "1.20.1";
 const host = "localhost";//localhost for LAN worlds
 const port = 25565;//25565 is default port for most servers
 const commanders = ["Vakore"];//The commander of the bots. Will only listen to chat commands from these players
-var botsToSpawn = ["DunderBot", "AnotherBot"/*, "ThirdBot"*/];//Currently only accepts a username as an argument. Note that more than one bot causes unwated bugs and errors that need ironing out. One or two works fine, but three starts to make things unstable.
+var botsToSpawn = ["DunderBot"/*, "AnotherBot", "ThirdBot"*/];//Currently only accepts a username as an argument. Note that more than one bot causes unwated bugs and errors that need ironing out. One or two works fine, but three starts to make things unstable.
 var botJoinServerDelay = 2000;//2000 by default to avoid throttled connections
+var dunderDebug = false;//Show debug information in the console or not.
 //------------------SETTINGS--------------------
 
 /*
@@ -74,7 +75,9 @@ Discord VC compatiblity?
 'Scouter' for open spaces for pathfinder?
 Figure out that one mine block rejected promise thingy
 */
-const dunderBotPlayerVersion = "Alpha - 8/6/2023";
+console.log("================================\nChat commands:\nsleep - find nearby bed and sleep in it\nwake - get out of bed\ne - enter 'generic' mode, does things like auto eat, PvE, following the player. Large work in progress.\ngoto <username> OR goto <x> <z> OR goto <x> <y> <z> - Pathfinds to a location using dunderPlayer-pathfind and exits 'generic' mode.\ntogglejump - toggles jump sprinting when following a path. Jump sprinting is a huge WIP. Defaults to on.\ngoto2 (for syntax see 'goto') - Pathfinds to a location using mineflayer-pathfinder. Can break other things, mainly for testing purposes.\nratfind (for syntax see 'goto') - uses and experimental feature that will probably never get used.\nversion - displays version in console.\n================================");
+
+const dunderBotPlayerVersion = "Alpha - 8/8/2023";
 
 
 //require("events").EventEmitter.prototype._maxListeners = 100;
@@ -86,6 +89,13 @@ const {PlayerState} = require("prismarine-physics");
 //const mineflayerViewer = require('prismarine-viewer').mineflayer
 var Vec3 = require('vec3').Vec3;
 
+//mineflayer-pathfinder
+const pathfinder = require('mineflayer-pathfinder').pathfinder
+const Movements = require('mineflayer-pathfinder').Movements
+const { GoalNear } = require('mineflayer-pathfinder').goals
+var defaultMove;
+
+
 //require("./dunderPlayer-misc.js");
 var fs = require('fs');
 // file is included here:
@@ -94,6 +104,7 @@ eval(fs.readFileSync(__dirname + '\\dunderPlayer-blockidentify.js')+'');
 eval(fs.readFileSync(__dirname + '\\dunderPlayer-pathfind.js')+'');
 eval(fs.readFileSync(__dirname + '\\dunderPlayer-followpath.js')+'');
 eval(fs.readFileSync(__dirname + '\\dunderPlayer-locomote.js')+'');
+eval(fs.readFileSync(__dirname + '\\dunderPlayer-ratfind.js')+'');
 eval(fs.readFileSync(__dirname + '\\dunderPlayer-message.js')+'');
 
 var bots = [];
@@ -113,7 +124,7 @@ function makeBots(cbtm) {
         port: port,//25565 is the default
         version: version,
        	username: botsToSpawn[cbtm],
-        viewDistance:2,
+        viewDistance:4,
         //auth:"microsoft",
     });
     //inventoryViewer(bots[cbtm]);
@@ -125,7 +136,7 @@ function makeBots(cbtm) {
 
     bots[cbtm].dunder = {
         "cbtm":cbtm,
-        "chatParticles":false/*(cbtm == 0)*/,
+        "chatParticles":(cbtm == 0),
 
         "spawned":false,
 
@@ -141,6 +152,7 @@ function makeBots(cbtm) {
         "jumpSprintStates":[],
         "jumpTargets":[],
         "jumpTarget":false,
+        "jumpYaw":0,
         "bestJumpSprintState":-1,
         "worrySprintJumpTimer":0,
 
@@ -169,6 +181,7 @@ function makeBots(cbtm) {
         "destinationTimer":30,
         "searchingPath":10,
         "lastPos":{"currentMove":0,x:0,y:0,z:0},
+        "lastPosOnPath":false,
         "nodes3d":[],
         "openNodes":[],
         "nodes":[],
@@ -198,6 +211,14 @@ function makeBots(cbtm) {
         "performanceStop":0,
         "bestNodeIndex":0,
         "bestNode":0,
+
+        "jumpTargetDelay":20,
+        "jumpSprintAlongPath":true,
+
+        //Ratfinding, unused
+        "rats":[],
+        "findingRat":null,
+        "bestRat":null,
     };
     var bot = bots[cbtm];
     bots[cbtm]._client.on("set_passengers", (packet) => {
@@ -220,6 +241,10 @@ function makeBots(cbtm) {
     });*/
 
     bots[cbtm].once("spawn", () => {
+        //mineflayer-pathfinder
+        bots[cbtm].loadPlugin(pathfinder)
+        defaultMove = new Movements(bots[cbtm])
+
         bots[cbtm].dunder.jumpTarget = bots[cbtm].entity.position;
         bots[cbtm].dunder.spawned = true;
         //console.log(bot.lookAt);
@@ -326,6 +351,7 @@ function runBot(bot) {
     bot.dunder.needsSpeed -= (bot.dunder.needsSpeed > -100);
     bot.dunder.isDigging -= (bot.dunder.isDigging > -10);
     bot.dunder.searchingPath -= (bot.dunder.searchingPath > -100);
+    bot.dunder.jumpTargetDelay -= (bot.dunder.jumpTargetDelay > -10);
     if (bot.targetDigBlock) {bot.dunder.isDigging = 2;}
 
     for (var i in bot.dunder.entityHitTimes) {
@@ -447,7 +473,39 @@ for (var i in bot.entities) {
         bot.dunder.onfire--;
     }
 
-    if (bot.masterState == "pathfinding") {
+    if (bot.masterState == "ratfinding") {
+        bot.dunder.state = "ratfind";
+        target = bot.dunder.bestRat;
+        if ((bot.dunder.jumpTarget || bot.entity.onGround) && target) {
+            //console.log(jumpTargets);
+            if (bot.entity.onGround && !bot.entity.isInLava && bot.dunder.worrySprintJumpTimer <= 0) {
+                bot.dunder.jumpTarget = false;
+                bot.dunder.jumpTargets = [];
+                bot.dunder.jumpSprintStates = [];
+                if (dist3d(bot.entity.position.x, bot.entity.position.y, bot.entity.position.z, target.position.x, target.position.y, target.position.z) > 3.0) {
+                    simulateJump(bot, target, new PlayerState(bot, simControl), 0);
+                } else {
+                    bot.clearControlStates();
+                }
+            }
+            if (bot.dunder.jumpTarget && target && bot.dunder.jumpTarget.shouldJump != undefined && (bot.dunder.bestJumpSprintState > -1 || !bot.dunder.jumpSprintStates[bot.dunder.bestJumpSprintState].isInLava)) {
+                bot.setControlState("forward", true);
+                bot.setControlState("sprint", true);
+                bot.setControlState("jump", bot.dunder.jumpTarget.shouldJump);
+                //bot.lookAt(new Vec3(bot.dunder.jumpTarget.x, bot.entity.position.y + 1.6, bot.dunder.jumpTarget.z), 100);
+                //console.log(bot.dunder.jumpSprintStates[bot.dunder.bestJumpSprintState].state.yaw);
+                bot.look(bot.dunder.jumpSprintStates[bot.dunder.bestJumpSprintState].state.yaw, 0, 100);
+                if (bot.dunder.jumpTarget.shouldJump == false && bot.dunder.worrySprintJump < 0) {
+                    bot.dunder.worrySprintJump = 2;
+                }
+            } else {
+                //bot.entity.velocity.x = 0;
+                //bot.entity.velocity.z = 0;
+            }
+        }
+    } else if (bot.masterState == "pathfinding2") {
+        bot.dunder.state = "pathfinding2";
+    } else if (bot.masterState == "pathfinding") {
         strictFollow(bot);
         bot.dunder.state = "pathfinding";
     } else if (bot.isSleeping) {
@@ -581,6 +639,19 @@ for (var i in bot.entities) {
             bot.look(bot.dunder.jumpSprintStates[bot.dunder.bestJumpSprintState].state.yaw, 0, 100);
             if (bot.dunder.jumpTarget.shouldJump == false && bot.dunder.worrySprintJump < 0) {
                 bot.dunder.worrySprintJump = 2;
+            }
+        } else if (target && bot.entity.isInWater) {
+            bot.lookAt(target.position.offset(0, 1.65, 0), 100);
+            //if () {
+                bot.setControlState("forward", true);
+                bot.setControlState("sprint", true);
+            //}
+
+            if (target.position.y > bot.entity.position.y + 0.1) {
+                bot.setControlState("jump", true);
+            } else if (target.position.y < bot.entity.position.y - 0.1) {
+                bot.setControlState("sneak", true);
+                if (bot.entity.velocity.y > -1.0) {bot.entity.velocity.y -= 0.01;}
             }
         } else {
             //bot.entity.velocity.x = 0;
