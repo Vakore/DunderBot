@@ -9,9 +9,10 @@ Type 'goto (player)', 'goto (x) (y) (z)', or 'goto (x) (z)' to enter pathfinding
 Type 'e' to enter generic mode.
 
 Go to dunderPlayer-main and edit the settings on the top to run the program.
-To show pathfinding debug particles go to line 128 of dunderPlayer-main and change 'chatParticles' to true, make sure cheats are on.
 
-Version - Alpha 8/6/2023
+To show pathfinding debug particles go to line 128 of dunderPlayer-main and change 'chatParticles' to true, make sure cheats are on. To turn these off set it to false. Currently on by default.
+
+Version - Alpha 8/8/2023
 
 NOTE: Not all of these files are necessary to run the bot(the 'backup' and 'old' files), as these are backups for myself.
 
@@ -22,8 +23,8 @@ Breaking blocks
 Placing blocks(alawys assumes infinite blocks)
 Water clutches
 Pathfinding outside of chunks
-Very WIP code that will likely crash or get stuck due to how I'm handling the "couldn't find path in reasonable time" thing, especially underground.
 WIP swimming
+Jump sprinting along the path. Currently WIP.
 
 Generic Mode:
 Decent PvE, able to use shield, still WIP
