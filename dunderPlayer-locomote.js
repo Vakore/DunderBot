@@ -192,15 +192,19 @@ function jumpSprintOnPath(bot, target, stateBase, searchCount, theParent) {
             var myScore = 25;
             for (var i = bot.dunder.lastPos.currentMove; i >= 0 && i > bot.dunder.movesToGo.length - 20; i--) {
                 if (dist3d(myState.pos.x, myState.pos.y, myState.pos.z,
-                    bot.dunder.movesToGo[i].x, bot.dunder.movesToGo[i].y, bot.dunder.movesToGo[i].z) <= 5) {
+                    bot.dunder.movesToGo[i].x + 0.5, bot.dunder.movesToGo[i].y, bot.dunder.movesToGo[i].z + 0.5) <= 5) {
                     //myScore += dist3d(myState.pos.x, myState.pos.y, myState.pos.z,
                     //                  bot.dunder.movesToGo[i].x + 0.5, bot.dunder.movesToGo[i].y, bot.dunder.movesToGo[i].z + 0.5);
                     myScore -= (27 - (dist3d(myState.pos.x, myState.pos.y, myState.pos.z,
-                    bot.dunder.movesToGo[i].x, bot.dunder.movesToGo[i].y, bot.dunder.movesToGo[i].z) / 2)) * (bot.dunder.lastPos.currentMove - i);
+                    bot.dunder.movesToGo[i].x + 0.5, bot.dunder.movesToGo[i].y, bot.dunder.movesToGo[i].z + 0.5) / 2)) * (bot.dunder.lastPos.currentMove - i);
                 }
                 if (myState.pos.y < myState.pos.y - 2.25) {
-                    myScore += 100;
+                    myScore += 1000;
                 }
+                if (dist3d(bot.dunder.lastGroundPos.x, bot.dunder.lastGroundPos.y, bot.dunder.lastGroundPos.z, myState.pos.x, myState.pos.y, myState.pos.z) < 1.0 && Math.abs(bot.dunder.lastGroundPos.y - myState.pos.y) < 0.5 && dist3d(myState.pos.x, myState.pos.y, myState.pos.z, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x + 0.5, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z + 0.5) < dist3d(bot.dunder.lastGroundPos.x, bot.dunder.lastGroundPos.y, bot.dunder.lastGroundPos.z, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x + 0.5, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z + 0.5)) {
+                    myScore += 1500;
+                }
+                myScore -= Math.sqrt(myState.vel.x * myState.vel.x + myState.vel.z * myState.vel.z) * 3;
             }
 
             if (myState.onGround && !myState.isInLava) {
@@ -222,15 +226,19 @@ function jumpSprintOnPath(bot, target, stateBase, searchCount, theParent) {
             var myScore = 25;
             for (var i = bot.dunder.lastPos.currentMove; i >= 0 && i > bot.dunder.movesToGo.length - 20; i--) {
                 if (dist3d(myState.pos.x, myState.pos.y, myState.pos.z,
-                    bot.dunder.movesToGo[i].x, bot.dunder.movesToGo[i].y, bot.dunder.movesToGo[i].z) <= 5) {
+                    bot.dunder.movesToGo[i].x + 0.5, bot.dunder.movesToGo[i].y, bot.dunder.movesToGo[i].z + 0.5) <= 5) {
                     //myScore += dist3d(myState.pos.x, myState.pos.y, myState.pos.z,
                     //                  bot.dunder.movesToGo[i].x + 0.5, bot.dunder.movesToGo[i].y, bot.dunder.movesToGo[i].z + 0.5);
                     myScore -= (27 - (dist3d(myState.pos.x, myState.pos.y, myState.pos.z,
-                    bot.dunder.movesToGo[i].x, bot.dunder.movesToGo[i].y, bot.dunder.movesToGo[i].z) / 2)) * (bot.dunder.lastPos.currentMove - i);
+                    bot.dunder.movesToGo[i].x + 0.5, bot.dunder.movesToGo[i].y, bot.dunder.movesToGo[i].z + 0.5) / 2)) * (bot.dunder.lastPos.currentMove - i);
                 }
                 if (myState.pos.y < myState.pos.y - 2.25) {
-                    myScore += 100;
+                    myScore += 1000;
                 }
+                if (dist3d(bot.dunder.lastGroundPos.x, bot.dunder.lastGroundPos.y, bot.dunder.lastGroundPos.z, myState.pos.x, myState.pos.y, myState.pos.z) < 0.5 && Math.abs(bot.dunder.lastGroundPos.y - myState.pos.y) < 0.5 && dist3d(myState.pos.x, myState.pos.y, myState.pos.z, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x + 0.5, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z + 0.5) < dist3d(bot.dunder.lastGroundPos.x, bot.dunder.lastGroundPos.y, bot.dunder.lastGroundPos.z, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x + 0.5, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z + 0.5)) {
+                    myScore += 1500;
+                }
+                myScore -= Math.sqrt(myState.vel.x * myState.vel.x + myState.vel.z * myState.vel.z) * 3;
             }
 
             if (myState.onGround && !myState.isInLava) {
@@ -266,10 +274,14 @@ function jumpSprintOnPath(bot, target, stateBase, searchCount, theParent) {
               bot.dunder.jumpTargets.push(mySearcher.state.pos);
               bot.lookAt(new Vec3(mySearcher.state.pos.x, /*mySearcher.state.pos.y*/target.position.y + 1.6, mySearcher.state.pos.z), 100);
               bot.dunder.jumpTarget = mySearcher.state.pos;
+              console.log(mySearcher.score);
               bot.dunder.jumpYaw = mySearcher.state.yaw;
               bot.dunder.jumpTarget.shouldJump = mySearcher.shouldJump;
               bot.dunder.bestJumpSprintState = myBestState;
               if (mySearcher.state.isInLava) {console.log("fire");}
+              if (mySearcher.score > -131) {
+                  bot.dunder.jumpTargetDelay = 15;
+              }
           } else if (searchCount > 0) {
               //console.log(JSON.stringify(bot.dunder.jumpSprintStates[myBestState].open));
               //bot.dunder.jumpSprintStates[myBestState].open = false;
@@ -291,7 +303,7 @@ function doJumpSprintStuff(bot) {
                 shouldJumpSprintOnPath = false;
                 bot.dunder.jumpTargetDelay = 5;
             }
-          if (shouldJumpSprintOnPath) {
+          if (shouldJumpSprintOnPath) {//Don't jump sprint if the parkour jump seems important
             if (bot.dunder.lastPos.currentMove > 0 && bot.dunder.movesToGo.length > 0 && bot.dunder.movesToGo[bot.dunder.lastPos.currentMove]) {
                 for (var i = bot.dunder.lastPos.currentMove; i > bot.dunder.lastPos.currentMove - 6 && i > 0; i--) {
                     //console.log(movesToGo[i].blockActions + ", " + movesToGo[i].blockDestructions);
@@ -299,8 +311,8 @@ function doJumpSprintStuff(bot) {
                         shouldJumpSprintOnPath = false;
                         bot.dunder.jumpTargetDelay = 5;
                         //console.log("Don't jump sprint! block destruction");
-                    } else if (bot.dunder.movesToGo[i] == "walkJump" || bot.dunder.movesToGo[i] == "walkDiagJump" ||
-                               i > 0 && bot.dunder.movesToGo[i - 1] && (Math.abs(bot.dunder.movesToGo[i - 1].x - bot.dunder.movesToGo[i].x) > 1 || Math.abs(bot.dunder.movesToGo[i - 1].z - bot.dunder.movesToGo[i].z) > 1)) {
+                    } else if (false && (bot.dunder.movesToGo[i] == "walkJump" || bot.dunder.movesToGo[i] == "walkDiagJump" ||
+                               i > 0 && bot.dunder.movesToGo[i - 1] && (Math.abs(bot.dunder.movesToGo[i - 1].x - bot.dunder.movesToGo[i].x) > 1 || Math.abs(bot.dunder.movesToGo[i - 1].z - bot.dunder.movesToGo[i].z) > 1))) {
                         var myScoutX = bot.dunder.movesToGo[i - 1].x;
                         var myScoutY = bot.dunder.movesToGo[i - 1].y;
                         var myScoutZ = bot.dunder.movesToGo[i - 1].z;
@@ -338,11 +350,19 @@ function doJumpSprintStuff(bot) {
                 }
             }
           }
+    if (bot.entity.onGround) {
+        bot.dunder.lastGroundPos = {x:bot.entity.position.x, y:bot.entity.position.y, z:bot.entity.position.z};
+    }
+    //if (bot.dunder.jumpTarget) {console.log(dist3d(bot.dunder.lastGroundPos.x, bot.dunder.lastGroundPos.y, bot.dunder.lastGroundPos.z, bot.dunder.jumpTarget.x, bot.dunder.jumpTarget.y, bot.dunder.jumpTarget.z) + "\n" + JSON.stringify(bot.dunder.lastGroundPos) + ", " + bot.dunder.jumpTarget);}
+
+    //Implement this inside of the "selection" phase so jumps that don't meet this criteria aren't selected, have a plan if none qualify
+    if (bot.dunder.jumpTarget && bot.dunder.jumpTarget.shouldJump && dist3d(bot.dunder.lastGroundPos.x, bot.dunder.lastGroundPos.y, bot.dunder.lastGroundPos.z, bot.dunder.jumpTarget.x, bot.dunder.jumpTarget.y, bot.dunder.jumpTarget.z) < 0.5 && Math.abs(bot.dunder.lastGroundPos.y - bot.dunder.jumpTarget.y) < 0.5) {bot.dunder.jumpTargetDelay = 5;}
 
     if (bot.dunder.jumpTarget && bot.dunder.jumpTargetDelay <= 0 && bot.dunder.movesToGo.length > 2) {
         bot.dunder.botMove.forward = true;
         bot.dunder.botMove.sprint = true;
-        bot.dunder.botMove.jump = true;
+        bot.dunder.botMove.jump = bot.dunder.jumpTarget.shouldJump;
+        bot.dunder.botMove.back = false;
         bot.look(bot.dunder.jumpYaw, 0, 100);
             if (bot.dunder.movesToGo[bot.dunder.lastPos.currentMove]) {
                 for (var i = 0; i < bot.dunder.movesToGo.length; i++) {

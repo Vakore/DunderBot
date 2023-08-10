@@ -1,3 +1,10 @@
+/*
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 //--------------SETTINGS-----------------------
 const version = "1.20.1";
@@ -10,17 +17,19 @@ var dunderDebug = false;//Show debug information in the console or not.
 //------------------SETTINGS--------------------
 
 /*
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 Dunder Bot Minecraft Player
 By Vakore
 
 Type 'goto <player>', 'goto <x> <y> <z>', or 'goto <x> <z>' to enter pathfinding mode and go to those coordinates
 Type 'e' to enter generic mode.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 
 Key:
 (!) - urgent
@@ -28,6 +37,11 @@ Key:
 (#) - confirmed fixed
 (@) - fixed but still some work to be done
 none - todo
+
+Other TODO:
+More strict scores for in path when near block place/destruction and allow jump sprinting more? fix these "place/break random blocks"
+Improve PvE based on velocity for threats(ones going toward are more dangerous than ones going backward, and thus need more spacing)
+A better "ignore" PvE system when fleeing is required/optimal, i.e. the commander has ran away
 
 TODO:
 (*) - 'Leaves above' bug for pathfinder
@@ -214,6 +228,7 @@ function makeBots(cbtm) {
 
         "jumpTargetDelay":20,
         "jumpSprintAlongPath":true,
+        "lastGroundPos":{x:0,y:0,z:0},
 
         //Ratfinding, unused
         "rats":[],

@@ -392,9 +392,9 @@ function strictFollow(bot) {
                     //don't sprint on 1 block gaps
                     bot.dunder.botMove.sprint = false;
                     //console.log("Slow down!");
-                } else if ((Math.abs(myMove.x - bot.dunder.lastPos.x) >= 4 || Math.abs(myMove.z - bot.dunder.lastPos.z) >= 4)) {
+                } else if ((Math.abs(myMove.x - bot.dunder.lastPos.x) >= 4 || Math.abs(myMove.z - bot.dunder.lastPos.z) >= 4) && botSpeed < 0.13 || Math.abs(myMove.x - bot.dunder.lastPos.x) >= 3 && Math.abs(myMove.z - bot.dunder.lastPos.z) >= 3) {
                     console.log(bot.entity.onGround + ", " + botSpeed);
-                    if (botSpeed < 0.13 && bot.dunder.needsSpeed <= -10) {
+                    if (botSpeed < 0.15 && bot.dunder.needsSpeed <= -10 && bot.entity.onGround) {
                         bot.dunder.needsSpeed = 5;
                     }
                 }
