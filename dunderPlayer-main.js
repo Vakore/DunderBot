@@ -91,7 +91,7 @@ Figure out that one mine block rejected promise thingy
 */
 console.log("================================\nChat commands:\nsleep - find nearby bed and sleep in it\nwake - get out of bed\ne - enter 'generic' mode, does things like auto eat, PvE, following the player. Large work in progress.\ngoto <username> OR goto <x> <z> OR goto <x> <y> <z> - Pathfinds to a location using dunderPlayer-pathfind and exits 'generic' mode.\ntogglejump - toggles jump sprinting when following a path. Jump sprinting is a huge WIP. Defaults to on.\ngoto2 (for syntax see 'goto') - Pathfinds to a location using mineflayer-pathfinder. Can break other things, mainly for testing purposes.\nratfind (for syntax see 'goto') - uses and experimental feature that will probably never get used.\nversion - displays version in console.\n================================");
 
-const dunderBotPlayerVersion = "Alpha - 8/8/2023";
+const dunderBotPlayerVersion = "Alpha - 8/10/2023";
 
 
 //require("events").EventEmitter.prototype._maxListeners = 100;
