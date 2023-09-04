@@ -202,7 +202,7 @@ function parseMessage(bot, username, msg) {
                     //mineflayer-pathfinder
                     bot.pathfinder.setMovements(defaultMove)
                     bot.pathfinder.setGoal(new GoalNear(findPathX, findPathY, findPathZ, 1))
-                    //findPath(bot, 4500, findPathX, findPathY, findPathZ);
+                    //findPath(bot, dunderBotPathfindDefaults, 4500, findPathX, findPathY, findPathZ);
                     //bot.entity.position.x = Math.floor(bot.entity.position.x) + 0.5;
                     //bot.entity.position.z = Math.floor(bot.entity.position.z) + 0.5;
                 }
@@ -255,7 +255,7 @@ function parseMessage(bot, username, msg) {
                     //mineflayer-pathfinder
                     //bot.pathfinder.setMovements(defaultMove)
                     //bot.pathfinder.setGoal(new GoalNear(findPathX, findPathY, findPathZ, 1))
-                    findPath(bot, 4500, findPathX, findPathY, findPathZ);
+                    findPath(bot, dunderBotPathfindDefaults, 4500, findPathX, findPathY, findPathZ);
                     //bot.entity.position.x = Math.floor(bot.entity.position.x) + 0.5;
                     //bot.entity.position.z = Math.floor(bot.entity.position.z) + 0.5;
                 }
