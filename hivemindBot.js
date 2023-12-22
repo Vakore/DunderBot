@@ -1,10 +1,3 @@
-/*
-    //host: "uhcpvpyay.minehut.gg",
-    //host: "67.222.135.72",
-    //host: "155.94.252.109",
-    //host: "wisn.us.to",
-    //host: "chickenbagelz.mcserver.at",
-*/
 const mineflayer = require("mineflayer");
 const {PlayerState} = require("prismarine-physics");
 var Vec3 = require('vec3').Vec3;
