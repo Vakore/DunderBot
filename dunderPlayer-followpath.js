@@ -190,10 +190,10 @@ function strictFollow(bot) {
 
 
 
-        if (bot.dunder.movesToGo.length > 0 && bot.dunder.lastPos.currentMove >= 0) {
+        if (bot.dunder.movesToGo.length > 0 && bot.dunder.lastPos.currentMove >= 0 && bot.dunder.movesToGo[bot.dunder.lastPos.currentMove] && bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x) {
             var myMove = bot.dunder.movesToGo[bot.dunder.lastPos.currentMove];
             //console.log("e" + bot.dunder.movesToGo.length + ", " + bot.dunder.lastPos.currentMove);
-            if (bot.dunder.chatParticles) {
+            if (bot.dunder.chatParticles && bot.dunder.lastPos && bot.dunder.lastPos.currentMove && bot.dunder.movesToGo[bot.dunder.lastPos.currentMove]) {
                 bot.chat("/particle damage_indicator " + bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x + " " + bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y + " " + bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z);
                 bot.chat("/particle heart " + bot.dunder.lastPos.x + " " + bot.dunder.lastPos.y + " " + bot.dunder.lastPos.z);
             }
@@ -308,7 +308,7 @@ function strictFollow(bot) {
                 if ((bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) && bot.dunder.movesToGo.length > 0 && bot.dunder.searchingPath < 0) {
                     //console.log("OK");
                     if (dunderDebug) {console.log(bot.dunder.movesToGo[0]);}
-                    findPath(bot, 7500, bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z, true, false);
+                    findPath(bot, dunderBotPathfindDefaults, 7500, bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z, true, false);
                 }
             } //else {console.log(bot.dunder.destinationTimer);}
 
@@ -335,7 +335,7 @@ function strictFollow(bot) {
 
             if (true) {
                 bot.dunder.botMove.forward = true;
-                bot.dunder.botMove.sprint = pathfinderOptions.sprint;
+                bot.dunder.botMove.sprint = bot.dunder.pathfinderOptions.sprint;
                 if (bot.targetDigBlock) {
                     bot.dunder.botMove.forward = false;
                     bot.dunder.botMove.sprint = false;
@@ -628,11 +628,11 @@ function strictFollow(bot) {
                 if (bot.targetDigBlock) {bot.stopDigging();}
                 console.log("Extending path through chunks...");
                 if (bot.dunder.goal.y != "no") {
-                    findPath(bot, 7400, Math.floor(bot.dunder.goal.x), Math.round(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
-                    //console.log("uh....");
+                    findPath(bot, dunderBotPathfindDefaults, 1400, Math.floor(bot.dunder.goal.x), Math.round(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, !bot.dunder.goal.isMobile);//Extending path here. "moveType" is not defined, line 1471
+                    console.log("uh.... " + JSON.stringify(bot.dunder.goal) + " well... " + JSON.stringify(bot.dunder.movesToGo[0]));
                 } else {
                     //console.log("oqiwth....");
-                    findPath(bot, 7400, Math.floor(bot.dunder.goal.x), "no", Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
+                    findPath(bot, dunderBotPathfindDefaults, 7400, Math.floor(bot.dunder.goal.x), "no", Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
                 }
         } else if (bot.dunder.movesToGo.length > 0 && bot.dunder.movesToGo.length <= 10) {
             //console.log("searching: " + botSearchingPath + ", bot.dunder.goal: " + JSON.stringify(bot.dunder.goal) + ", bot.dunder.movesToGo: " + bot.dunder.movesToGo.length + ", bot.dunder.movesToGo[0]: " + JSON.stringify(bot.dunder.movesToGo[0]));

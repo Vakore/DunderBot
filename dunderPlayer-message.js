@@ -202,7 +202,7 @@ function parseMessage(bot, username, msg) {
                     //mineflayer-pathfinder
                     bot.pathfinder.setMovements(defaultMove)
                     bot.pathfinder.setGoal(new GoalNear(findPathX, findPathY, findPathZ, 1))
-                    //findPath(bot, 4500, findPathX, findPathY, findPathZ);
+                    //findPath(bot, dunderBotPathfindDefaults, 4500, findPathX, findPathY, findPathZ);
                     //bot.entity.position.x = Math.floor(bot.entity.position.x) + 0.5;
                     //bot.entity.position.z = Math.floor(bot.entity.position.z) + 0.5;
                 }
@@ -220,6 +220,27 @@ function parseMessage(bot, username, msg) {
                             findPathY = Math.round(playerTo.entity.position.y);
                             findPathZ = Math.floor(playerTo.entity.position.z);
                             validSyntax = true;
+                        }
+                    } else if (msg[1] == "*") {
+                        var inven = bot.inventory.slots;
+                        console.log("Searching for compass...");
+                        for (var i = 0; i < inven.length; i++) {
+                            if (inven[i] == null) {
+                                continue;
+                            } else if (inven[i].name == "compass") {
+                                    console.log(JSON.stringify(inven[i].name));
+                                if (inven[i].nbt && inven[i].nbt.value && inven[i].nbt.value.LodestonePos) {
+                                    console.log(JSON.stringify(inven[i].nbt.value.LodestonePos));
+                                    findPathX = inven[i].nbt.value.LodestonePos.value.X.value;
+                                    //findPathY = inven[i].nbt.value.LodestonePos.value.Y.value + 
+                                    findPathY = "no";
+                                    findPathZ = inven[i].nbt.value.LodestonePos.value.Z.value;
+                                    validSyntax = true;
+                                    i = inven.length;
+                                }
+                            } else {
+                                //console.log(inven[i].name);
+                            }
                         }
                     } else if (msg.length == 2) {
                         console.log("Finding " + msg[1] + "...");
@@ -255,7 +276,7 @@ function parseMessage(bot, username, msg) {
                     //mineflayer-pathfinder
                     //bot.pathfinder.setMovements(defaultMove)
                     //bot.pathfinder.setGoal(new GoalNear(findPathX, findPathY, findPathZ, 1))
-                    findPath(bot, 4500, findPathX, findPathY, findPathZ);
+                    findPath(bot, dunderBotPathfindDefaults, 4500, findPathX, findPathY, findPathZ);
                     //bot.entity.position.x = Math.floor(bot.entity.position.x) + 0.5;
                     //bot.entity.position.z = Math.floor(bot.entity.position.z) + 0.5;
                 }

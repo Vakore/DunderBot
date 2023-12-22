@@ -172,6 +172,9 @@ function botCanHit(bot, elTarget) {
 };
 
 function attackEntity(bot, target) {
+    if (target.name == "arrow" || target.name == "small_fireball") {
+        return false;
+    }
     bot.attack(target, true);
     bot.dunder.attackTimer = 0;
     bot.dunder.antiRightClickTicks = 2;
@@ -232,6 +235,36 @@ function getAttackSpeed(item) {
     }
 };
 
+//
+function projectileIsThreat(bot, entity) {
+    if (!entity.oldPosition) {
+        entity.oldPosition = new Vec3(entity.position.x, entity.position.y, entity.position.z);
+        entity.fakeVelocity = new Vec3(entity.velocity.x, entity.velocity.y, entity.velocity.z);
+        return false;
+    } else {
+        entity.fakeVelocity.x = entity.position.x - entity.oldPosition.x;
+        entity.fakeVelocity.y = entity.position.y - entity.oldPosition.y;
+        entity.fakeVelocity.z = entity.position.z - entity.oldPosition.z;
+    }
+    //console.log(JSON.stringify(entity));
+    if (dist3d(entity.oldPosition.x, entity.oldPosition.y, entity.oldPosition.z, bot.entity.position.x, bot.entity.position.y, bot.entity.position.z) < dist3d(entity.position.x, entity.position.y, entity.position.z, bot.entity.position.x, bot.entity.position.y, bot.entity.position.z)) {
+        entity.oldPosition.x = entity.position.x;
+        entity.oldPosition.y = entity.position.y;
+        entity.oldPosition.z = entity.position.z;
+        return false;
+    }
+
+    entity.oldPosition.x = entity.position.x;
+    entity.oldPosition.y = entity.position.y;
+    entity.oldPosition.z = entity.position.z;
+
+
+
+    if (Math.abs(entity.fakeVelocity.x) + Math.abs(entity.fakeVelocity.z) > 0.15) {
+        return true;
+    }
+    return false;
+};
 
 //mining/building
 function digBlock(bot, x, y, z) {
@@ -349,6 +382,50 @@ function findCommander(bot) {
         }
     }
     return leTarget;
+};
+
+
+
+function getEntityFloorPos(bot, position, obj) {
+    if (!obj) {
+        obj = {x:0,y:0,z:0};
+    }
+    obj.x = Math.floor(position.x);
+    obj.y = Math.floor(position.y)-1;
+    obj.z = Math.floor(position.z);
+    if (!blockStand(bot, obj.x, obj.y, obj.z)) {
+        if (blockStand(bot, obj.x, obj.y - 1, obj.z)) {
+            obj.y--;
+        } else {
+            if (blockStand(bot, obj.x - 1, obj.y, obj.z)) {
+                obj.x--;
+            } else if (blockStand(bot, obj.x + 1, obj.y, obj.z)) {
+                obj.x++;
+            } else if (blockStand(bot, obj.x, obj.y, obj.z - 1)) {
+                obj.z--;
+            } else if (blockStand(bot, obj.x, obj.y, obj.z + 1)) {
+                obj.z++;
+            } else if (blockStand(bot, obj.x - 1, obj.y, obj.z - 1)) {
+                obj.x--;
+                obj.z--;
+            } else if (blockStand(bot, obj.x + 1, obj.y, obj.z - 1)) {
+                obj.x++;
+                obj.z--;
+            } else if (blockStand(bot, obj.x - 1, obj.y, obj.z + 1)) {
+                obj.x--;
+                obj.z++;
+            } else if (blockStand(bot, obj.x + 1, obj.y, obj.z + 1)) {
+                obj.x++;
+                obj.z++;
+            } else if (blockStand(bot, obj.x, obj.y - 2, obj.z)) {
+                obj.y -= 2;
+            } else if (blockStand(bot, obj.x, obj.y - 3, obj.z)) {
+                obj.y -= 3;
+            }
+        }
+    }
+    obj.y++;
+    return obj;
 };
 
 //Math
