@@ -1,10 +1,3 @@
-/*
-    //host: "uhcpvpyay.minehut.gg",
-    //host: "67.222.135.72",
-    //host: "155.94.252.109",
-    //host: "wisn.us.to",
-    //host: "chickenbagelz.mcserver.at",
-*/
 const mineflayer = require("mineflayer");
 const {PlayerState} = require("prismarine-physics");
 var Vec3 = require('vec3').Vec3;
@@ -12,7 +5,7 @@ var Vec3 = require('vec3').Vec3;
 const bot = mineflayer.createBot({
     host: "localhost",
     port: 25565,
-    //host: "minecraft.next-gen.dev",
+    //host: "",
     //port: 25565,//25565 is the default
     username: "DunderBot",
     version: "1.20.1",
