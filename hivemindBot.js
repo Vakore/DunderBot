@@ -5,7 +5,7 @@ var Vec3 = require('vec3').Vec3;
 const bot = mineflayer.createBot({
     host: "localhost",
     port: 25565,
-    //host: "minecraft.next-gen.dev",
+    //host: "",
     //port: 25565,//25565 is the default
     username: "DunderBot",
     version: "1.20.1",
