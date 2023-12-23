@@ -306,7 +306,7 @@ function strictFollow(bot) {
             if (!onPath) {
                 if (dunderDebug) {console.log("GET BACK IN FORMATION SOLDIER");}
                 if ((bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) && bot.dunder.movesToGo.length > 0 && bot.dunder.searchingPath < 0) {
-                    //console.log("OK");
+                    console.log("OK");
                     if (dunderDebug) {console.log(bot.dunder.movesToGo[0]);}
                     findPath(bot, dunderBotPathfindDefaults, 7500, bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z, true, false);
                 }
@@ -628,7 +628,7 @@ function strictFollow(bot) {
                 if (bot.targetDigBlock) {bot.stopDigging();}
                 console.log("Extending path through chunks...");
                 if (bot.dunder.goal.y != "no") {
-                    findPath(bot, dunderBotPathfindDefaults, 1400, Math.floor(bot.dunder.goal.x), Math.round(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, !bot.dunder.goal.isMobile);//Extending path here. "moveType" is not defined, line 1471
+                    findPath(bot, dunderBotPathfindDefaults, 1400, Math.floor(bot.dunder.goal.x), Math.round(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, (!bot.dunder.goal.isMobile && false));//Extending path here. "moveType" is not defined, line 1471
                     console.log("uh.... " + JSON.stringify(bot.dunder.goal) + " well... " + JSON.stringify(bot.dunder.movesToGo[0]));
                 } else {
                     //console.log("oqiwth....");

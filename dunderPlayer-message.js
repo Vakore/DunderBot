@@ -4,6 +4,15 @@ function parseMessage(bot, username, msg) {
   if (commanders.includes(username)) {
     //console.log(username == "Vakore");
     switch (msg[0].toLowerCase()) {
+        case "d":
+            console.log("DDDDDDDDDD");
+            console.log(JSON.stringify(bot.dunder.goal));
+        break;
+        case "s":
+            console.log("SSSSSSSSSS");
+            bot.dunder.goal.reached = true;
+        break;
+
         case "help":
             console.log("================================\nChat commands:\nsleep - find nearby bed and sleep in it\nwake - get out of bed\ne - enter 'generic' mode, does things like auto eat, PvE, following the player. Large work in progress.\ngoto <username> OR goto <x> <z> OR goto <x> <y> <z> - Pathfinds to a location using dunderPlayer-pathfind and exits 'generic' mode.\ntogglejump - toggles jump sprinting when following a path. Jump sprinting is a huge WIP. Defaults to on.\ngoto2 (for syntax see 'goto') - Pathfinds to a location using mineflayer-pathfinder. Can break other things, mainly for testing purposes.\nratfind (for syntax see 'goto') - uses and experimental feature that will probably never get used.\nversion - displays version in console.\n================================");
         break;
@@ -144,9 +153,9 @@ function parseMessage(bot, username, msg) {
                          ", Y: " + Math.floor(bot.entity.position.y) +
                          ", Z: " + Math.floor(bot.entity.position.z));
                     if (findPathZ != undefined) {
-                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false, isMobile:false};
                     } else {
-                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false, isMobile:false};
                     }
                     //mineflayer-pathfinder
                     //bot.pathfinder.setMovements(defaultMove)
@@ -195,9 +204,9 @@ function parseMessage(bot, username, msg) {
                          ", Y: " + Math.floor(bot.entity.position.y) +
                          ", Z: " + Math.floor(bot.entity.position.z));
                     if (findPathZ != undefined) {
-                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false, isMobile:false};
                     } else {
-                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false, isMobile:false};
                     }
                     //mineflayer-pathfinder
                     bot.pathfinder.setMovements(defaultMove)
@@ -269,9 +278,9 @@ function parseMessage(bot, username, msg) {
                          ", Y: " + Math.floor(bot.entity.position.y) +
                          ", Z: " + Math.floor(bot.entity.position.z));
                     if (findPathZ != undefined) {
-                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false, isMobile:false};
                     } else {
-                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false, isMobile:false};
                     }
                     //mineflayer-pathfinder
                     //bot.pathfinder.setMovements(defaultMove)

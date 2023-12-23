@@ -784,6 +784,7 @@ for (var i in bot.entities) {
             //bot.entity.velocity.x = 0;
             //bot.entity.velocity.z = 0;
     } else if (bot.dunder.state == "follow") {
+        bot.dunder.goal.isMobile = true;
         target = findCommander(bot);
         if (target && dist3d(bot.entity.position.x, bot.entity.position.y, bot.entity.position.z, target.position.x, target.position.y, target.position.z) > 3.0 && target.onGround &&
             (!bot.dunder.findingPath || dist3d(bot.dunder.goal.x, bot.dunder.goal.y, bot.dunder.goal.z, target.position.x, target.position.y, target.position.z) > 3.0)) {
