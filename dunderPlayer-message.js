@@ -4,6 +4,15 @@ function parseMessage(bot, username, msg) {
   if (commanders.includes(username)) {
     //console.log(username == "Vakore");
     switch (msg[0].toLowerCase()) {
+        case "d":
+            console.log("DDDDDDDDDD");
+            console.log(JSON.stringify(bot.dunder.goal));
+        break;
+        case "s":
+            console.log("SSSSSSSSSS");
+            bot.dunder.goal.reached = true;
+        break;
+
         case "help":
             console.log("================================\nChat commands:\nsleep - find nearby bed and sleep in it\nwake - get out of bed\ne - enter 'generic' mode, does things like auto eat, PvE, following the player. Large work in progress.\ngoto <username> OR goto <x> <z> OR goto <x> <y> <z> - Pathfinds to a location using dunderPlayer-pathfind and exits 'generic' mode.\ntogglejump - toggles jump sprinting when following a path. Jump sprinting is a huge WIP. Defaults to on.\ngoto2 (for syntax see 'goto') - Pathfinds to a location using mineflayer-pathfinder. Can break other things, mainly for testing purposes.\nratfind (for syntax see 'goto') - uses and experimental feature that will probably never get used.\nversion - displays version in console.\n================================");
         break;
@@ -50,6 +59,14 @@ function parseMessage(bot, username, msg) {
             bot.sleep(bedBlock);
         } else {
             console.log("Cannot find a bed!");
+            var bedBlock = bot.findBlock({
+                matching: (block) => (bot.isABed(block) && bot.parseBedMetadata(block).occupied == 0),
+                maxDistance: 30,
+            });
+            if (bedBlock) {
+                bot.dunder.goal = getEntityFloorPos(bot, bedBlock.position, bot.dunder.goal);
+                findPath(bot, dunderBotPathfindDefaults, 1500, Math.floor(bedBlock.position.x), Math.floor(bedBlock.position.y), Math.floor(bedBlock.position.z));
+            }
         }
        break;
 
@@ -61,8 +78,13 @@ function parseMessage(bot, username, msg) {
            }
        break;
 
+       case "repeattasks":
+           dunderTaskInitialize(bot);
+       break;
+
         //state setter
         case "idle":
+            bot.dunder.masterState = "idle";
             bot.dunder.state = "idle";
         break;
         case "pve":
@@ -90,13 +112,21 @@ function parseMessage(bot, username, msg) {
           }
         break;
 
+       case "debugpath":
+           dunderTaskLog(JSON.stringify(bot.dunder.movesToGo));
+           dunderTaskLog(JSON.stringify(bot.dunder.goal));
+           dunderTaskLog(JSON.stringify(bot.dunder.lastPos));
+       break;
+
        case "teams":
            console.log(bot.teams);
            console.log("---------------");
            console.log(bot.teamMap);
        break;
        case "e":
-           bot.masterState = "idle";
+           bot.dunder.pathGoalForgiveness = 0;
+           bot.dunder.masterState = "idle";
+           bot.dunder.state = "idle";
        break;
 
        case "togglejump":
@@ -105,7 +135,7 @@ function parseMessage(bot, username, msg) {
        break;
 
        case "ratfind":
-                bot.masterState = "ratfinding";//for mineflayer-pathfinder set to "pathfinding2"
+                bot.dunder.masterState = "ratfinding";//for mineflayer-pathfinder set to "pathfinding2"
                 var validSyntax = false;
                 var findPathX = 0, findPathY = 0, findPathZ = 0;
                     if (msg[1] == "me") {
@@ -144,9 +174,9 @@ function parseMessage(bot, username, msg) {
                          ", Y: " + Math.floor(bot.entity.position.y) +
                          ", Z: " + Math.floor(bot.entity.position.z));
                     if (findPathZ != undefined) {
-                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false, isMobile:false};
                     } else {
-                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false, isMobile:false};
                     }
                     //mineflayer-pathfinder
                     //bot.pathfinder.setMovements(defaultMove)
@@ -156,7 +186,7 @@ function parseMessage(bot, username, msg) {
             break;
 
             case "goto2":
-                bot.masterState = "pathfinding2";//for mineflayer-pathfinder set to "pathfinding2"
+                bot.dunder.masterState = "pathfinding2";//for mineflayer-pathfinder set to "pathfinding2"
                 var validSyntax = false;
                 var findPathX = 0, findPathY = 0, findPathZ = 0;
                     if (msg[1] == "me") {
@@ -195,21 +225,21 @@ function parseMessage(bot, username, msg) {
                          ", Y: " + Math.floor(bot.entity.position.y) +
                          ", Z: " + Math.floor(bot.entity.position.z));
                     if (findPathZ != undefined) {
-                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false, isMobile:false};
                     } else {
-                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false, isMobile:false};
                     }
                     //mineflayer-pathfinder
                     bot.pathfinder.setMovements(defaultMove)
                     bot.pathfinder.setGoal(new GoalNear(findPathX, findPathY, findPathZ, 1))
-                    //findPath(bot, 4500, findPathX, findPathY, findPathZ);
+                    //findPath(bot, dunderBotPathfindDefaults, 4500, findPathX, findPathY, findPathZ);
                     //bot.entity.position.x = Math.floor(bot.entity.position.x) + 0.5;
                     //bot.entity.position.z = Math.floor(bot.entity.position.z) + 0.5;
                 }
             break;
 
             case "goto":
-                bot.masterState = "pathfinding";//for mineflayer-pathfinder set to "pathfinding2"
+                bot.dunder.masterState = "pathfinding";//for mineflayer-pathfinder set to "pathfinding2"
                 var validSyntax = false;
                 var findPathX = 0, findPathY = 0, findPathZ = 0;
                     if (msg[1] == "me") {
@@ -220,6 +250,27 @@ function parseMessage(bot, username, msg) {
                             findPathY = Math.round(playerTo.entity.position.y);
                             findPathZ = Math.floor(playerTo.entity.position.z);
                             validSyntax = true;
+                        }
+                    } else if (msg[1] == "*") {
+                        var inven = bot.inventory.slots;
+                        console.log("Searching for compass...");
+                        for (var i = 0; i < inven.length; i++) {
+                            if (inven[i] == null) {
+                                continue;
+                            } else if (inven[i].name == "compass") {
+                                    console.log(JSON.stringify(inven[i].name));
+                                if (inven[i].nbt && inven[i].nbt.value && inven[i].nbt.value.LodestonePos) {
+                                    console.log(JSON.stringify(inven[i].nbt.value.LodestonePos));
+                                    findPathX = inven[i].nbt.value.LodestonePos.value.X.value;
+                                    //findPathY = inven[i].nbt.value.LodestonePos.value.Y.value + 
+                                    findPathY = inven[i].nbt.value.LodestonePos.value.Y.value + 1;//"no";
+                                    findPathZ = inven[i].nbt.value.LodestonePos.value.Z.value;
+                                    validSyntax = true;
+                                    i = inven.length;
+                                }
+                            } else {
+                                //console.log(inven[i].name);
+                            }
                         }
                     } else if (msg.length == 2) {
                         console.log("Finding " + msg[1] + "...");
@@ -248,14 +299,14 @@ function parseMessage(bot, username, msg) {
                          ", Y: " + Math.floor(bot.entity.position.y) +
                          ", Z: " + Math.floor(bot.entity.position.z));
                     if (findPathZ != undefined) {
-                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:findPathY, z:findPathZ, reached:false, isMobile:false};
                     } else {
-                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false};
+                        bot.dunder.goal = {x:findPathX, y:"no", z:findPathY, reached:false, isMobile:false};
                     }
                     //mineflayer-pathfinder
                     //bot.pathfinder.setMovements(defaultMove)
                     //bot.pathfinder.setGoal(new GoalNear(findPathX, findPathY, findPathZ, 1))
-                    findPath(bot, 4500, findPathX, findPathY, findPathZ);
+                    findPath(bot, dunderBotPathfindDefaults, 4500, findPathX, findPathY, findPathZ);
                     //bot.entity.position.x = Math.floor(bot.entity.position.x) + 0.5;
                     //bot.entity.position.z = Math.floor(bot.entity.position.z) + 0.5;
                 }
@@ -272,6 +323,13 @@ case "standingin":
                 console.log("Fists: " + getDigTime(bot, Math.floor(bot.entity.position.x), Math.floor(bot.entity.position.y), Math.floor(bot.entity.position.z), false, false));
                 console.log("Sharpest Tool: " + getDigTime(bot, Math.floor(bot.entity.position.x), Math.floor(bot.entity.position.y), Math.floor(bot.entity.position.z), false, true));
             break;
+
+           case "activate":
+               bot.activateItem();
+           break;
+           case "deactivate":
+               bot.deactivateItem();
+           break;
     }
   }
 };

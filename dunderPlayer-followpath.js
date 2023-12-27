@@ -190,10 +190,10 @@ function strictFollow(bot) {
 
 
 
-        if (bot.dunder.movesToGo.length > 0 && bot.dunder.lastPos.currentMove >= 0) {
+        if (bot.dunder.movesToGo.length > 0 && bot.dunder.lastPos.currentMove >= 0 && bot.dunder.movesToGo[bot.dunder.lastPos.currentMove] && bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x) {
             var myMove = bot.dunder.movesToGo[bot.dunder.lastPos.currentMove];
             //console.log("e" + bot.dunder.movesToGo.length + ", " + bot.dunder.lastPos.currentMove);
-            if (bot.dunder.chatParticles) {
+            if (bot.dunder.chatParticles && bot.dunder.lastPos && bot.dunder.lastPos.currentMove && bot.dunder.movesToGo[bot.dunder.lastPos.currentMove]) {
                 bot.chat("/particle damage_indicator " + bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x + " " + bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y + " " + bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z);
                 bot.chat("/particle heart " + bot.dunder.lastPos.x + " " + bot.dunder.lastPos.y + " " + bot.dunder.lastPos.z);
             }
@@ -306,9 +306,9 @@ function strictFollow(bot) {
             if (!onPath) {
                 if (dunderDebug) {console.log("GET BACK IN FORMATION SOLDIER");}
                 if ((bot.entity.onGround || bot.entity.isInWater || bot.entity.isInLava) && bot.dunder.movesToGo.length > 0 && bot.dunder.searchingPath < 0) {
-                    //console.log("OK");
+                    console.log("OK");
                     if (dunderDebug) {console.log(bot.dunder.movesToGo[0]);}
-                    findPath(bot, 7500, bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z, true, false);
+                    findPath(bot, dunderBotPathfindDefaults, 7500, bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z, true, false);
                 }
             } //else {console.log(bot.dunder.destinationTimer);}
 
@@ -335,12 +335,13 @@ function strictFollow(bot) {
 
             if (true) {
                 bot.dunder.botMove.forward = true;
-                bot.dunder.botMove.sprint = pathfinderOptions.sprint;
+                bot.dunder.botMove.sprint = bot.dunder.pathfinderOptions.sprint;
                 if (bot.targetDigBlock) {
                     bot.dunder.botMove.forward = false;
                     bot.dunder.botMove.sprint = false;
                     //bot.entity.velocity.x = 0;
                     //bot.entity.velocity.z = 0;
+                console.log("balancing mining by standing still");
                     var stayStill = attemptToStayStill(bot, bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5);
                      bot.dunder.botMove.forward = stayStill.forward;
                      bot.dunder.botMove.back = stayStill.back;
@@ -525,11 +526,17 @@ function strictFollow(bot) {
         } else {
             onPath = false;
             if (dist3d(bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5, bot.entity.position.x, bot.entity.position.y, bot.entity.position.z) < 2) {
+                console.log("balancing end of path by standing still");
                 var stayStill = attemptToStayStill(bot, bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5);
                 bot.dunder.botMove.forward = stayStill.forward;
                 bot.dunder.botMove.back = stayStill.back;
                 bot.dunder.botMove.left = stayStill.left;
                 bot.dunder.botMove.right = stayStill.right;
+                //console.log("reached end of path!");
+                if (bot.dunderTaskCurrent == "pathfinding" && !bot.dunderTaskCompleted && dist3d(bot.dunder.goal.x + 0.5, (bot.dunder.goal.y != "no") ? bot.dunder.goal.y : 0, bot.dunder.goal.z + 0.5, bot.entity.position.x, (bot.dunder.goal.y != "no") ? bot.entity.position.y : 0, bot.entity.position.z) < bot.dunder.pathGoalForgiveness + 2) {
+                    bot.dunderTaskCompleted = true;
+                    dunderTaskLog("Finished pathfinding task. " + JSON.stringify(bot.dunder.goal) + " " + (bot.dunder.goal.y != "no"));
+                } //else {console.log(bot.dunderTaskCurrent);}
             }
         }
         if (!bot.targetDigBlock) {
@@ -624,19 +631,54 @@ function strictFollow(bot) {
             bot.dunder.controls.sneak = bot.dunder.botMove.sneak;
 
         //extend the path when near the end of a path that hasn't reached the goal yet due to chunk borders
-        if (bot.dunder.searchingPath <= 0 && !bot.dunder.goal.reached && bot.dunder.movesToGo.length > 0 && bot.dunder.movesToGo.length <= 10 && bot.dunder.movesToGo[0].x != bot.dunder.goal.x | bot.dunder.movesToGo[0].y != bot.dunder.goal.y & bot.dunder.goal.y != "no" | bot.dunder.movesToGo[0].z != bot.dunder.goal.z) {
+        if (bot.dunder.searchingPath <= 0 && !bot.dunder.goal.reached && bot.dunder.movesToGo.length > 0 && bot.dunder.movesToGo.length <= 10 && (bot.dunder.goal.y != "no" && distMan3d(bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z, bot.dunder.goal.x, bot.dunder.goal.y, bot.dunder.goal.z) > bot.dunder.pathGoalForgiveness || bot.dunder.goal.y == "no" && distMan3d(bot.dunder.movesToGo[0].x, 0, bot.dunder.movesToGo[0].z, bot.dunder.goal.x, 0, bot.dunder.goal.z) > bot.dunder.pathGoalForgiveness)/*bot.dunder.movesToGo[0].x != bot.dunder.goal.x | bot.dunder.movesToGo[0].y != bot.dunder.goal.y & bot.dunder.goal.y != "no" | bot.dunder.movesToGo[0].z != bot.dunder.goal.z*/) {
                 if (bot.targetDigBlock) {bot.stopDigging();}
                 console.log("Extending path through chunks...");
                 if (bot.dunder.goal.y != "no") {
-                    findPath(bot, 7400, Math.floor(bot.dunder.goal.x), Math.round(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
-                    //console.log("uh....");
+                    findPath(bot, dunderBotPathfindDefaults, 1400, Math.floor(bot.dunder.goal.x), Math.round(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, (!bot.dunder.goal.isMobile && false));//Extending path here. "moveType" is not defined, line 1471
+                    console.log("uh.... " + JSON.stringify(bot.dunder.goal) + " well... " + JSON.stringify(bot.dunder.movesToGo[0]));
                 } else {
                     //console.log("oqiwth....");
-                    findPath(bot, 7400, Math.floor(bot.dunder.goal.x), "no", Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
+                    findPath(bot, dunderBotPathfindDefaults, 7400, Math.floor(bot.dunder.goal.x), "no", Math.floor(bot.dunder.goal.z), false, true);//Extending path here. "moveType" is not defined, line 1471
                 }
         } else if (bot.dunder.movesToGo.length > 0 && bot.dunder.movesToGo.length <= 10) {
             //console.log("searching: " + botSearchingPath + ", bot.dunder.goal: " + JSON.stringify(bot.dunder.goal) + ", bot.dunder.movesToGo: " + bot.dunder.movesToGo.length + ", bot.dunder.movesToGo[0]: " + JSON.stringify(bot.dunder.movesToGo[0]));
         }
+
+
+
+            //skipper stuff(!!!)
+            if (bot.dunder.worryBlockSkipTimer < 0) {
+                bot.dunder.worryBlockSkipTimer = 10;
+                var worryBlockCount = 0;
+                var earliestSkip = 0;
+                var lattestSkip = bot.dunder.lastPos.currentMove;
+                for (var i = bot.dunder.lastPos.currentMove; i > bot.dunder.lastPos.currentMove - (6 + ((worryBlockCount > 0) ? 1 : 0) + ((worryBlockCount > 1) ? 1 : 0)) && i > 0; i--) {
+                    //console.log(movesToGo[i].blockActions + ", " + movesToGo[i].blockDestructions);
+                    if (bot.dunder.movesToGo[i] && (bot.dunder.movesToGo[i].blockActions && bot.dunder.movesToGo[i].blockActions.length > 0 || bot.dunder.movesToGo[i].blockDestructions && bot.dunder.movesToGo[i].blockDestructions.length > 0)) {
+                        //shouldJumpSprintOnPath = false;
+                        //bot.dunder.jumpTargetDelay = 5;
+                        //console.log("Block break");
+                        worryBlockCount++;
+                        if (earliestSkip == 0) {earliestSkip = i;}
+                        lattestSkip = i;
+                    }
+                }
+
+                if (worryBlockCount > 0 && worryBlockCount < 3) {
+                    console.log("Can we skip from " + earliestSkip + " to after " + lattestSkip);
+
+                    var worryBlockSkippable = false;//findPath(bot, dunderBotPathfindSkips, 10, Math.floor(bot.dunder.movesToGo[lattestSkip].x), Math.floor(bot.dunder.movesToGo[lattestSkip].y), Math.floor(bot.dunder.movesToGo[lattestSkip].z));
+                    if (worryBlockSkippable) {
+                        console.log("skip it!");
+                    } else {
+                        console.log("can't skip... (never checked, program it lol)");
+                    }
+                    
+                }
+            }
+            //skipper stuff(!!!)
+            //dunderTaskLog(JSON.stringify(bot.dunder.movesToGo[bot.dunder.lastPos.currentMove]));
     //} catch (e) {
     //    console.error("strictFollow error \n" + e); 
     //}
@@ -654,6 +696,7 @@ function strictFollow(bot) {
 
 
 function attemptToStayStill(bot, x, y, z) {
+    console.log("stay still!");
     var myStates = [
         new PlayerState(bot, {forward: true, back: false, left: false, right: false, jump: false,sprint: false,sneak: false,}),
         new PlayerState(bot, {forward: false, back: true, left: false, right: false, jump: false,sprint: false,sneak: false,}),

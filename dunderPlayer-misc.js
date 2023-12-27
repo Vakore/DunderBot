@@ -172,6 +172,9 @@ function botCanHit(bot, elTarget) {
 };
 
 function attackEntity(bot, target) {
+    if (target.name == "arrow" || target.name == "small_fireball") {
+        return false;
+    }
     bot.attack(target, true);
     bot.dunder.attackTimer = 0;
     bot.dunder.antiRightClickTicks = 2;
@@ -232,6 +235,36 @@ function getAttackSpeed(item) {
     }
 };
 
+//
+function projectileIsThreat(bot, entity) {
+    if (!entity.oldPosition) {
+        entity.oldPosition = new Vec3(entity.position.x, entity.position.y, entity.position.z);
+        entity.fakeVelocity = new Vec3(entity.velocity.x, entity.velocity.y, entity.velocity.z);
+        return false;
+    } else {
+        entity.fakeVelocity.x = entity.position.x - entity.oldPosition.x;
+        entity.fakeVelocity.y = entity.position.y - entity.oldPosition.y;
+        entity.fakeVelocity.z = entity.position.z - entity.oldPosition.z;
+    }
+    //console.log(JSON.stringify(entity));
+    if (dist3d(entity.oldPosition.x, entity.oldPosition.y, entity.oldPosition.z, bot.entity.position.x, bot.entity.position.y, bot.entity.position.z) < dist3d(entity.position.x, entity.position.y, entity.position.z, bot.entity.position.x, bot.entity.position.y, bot.entity.position.z)) {
+        entity.oldPosition.x = entity.position.x;
+        entity.oldPosition.y = entity.position.y;
+        entity.oldPosition.z = entity.position.z;
+        return false;
+    }
+
+    entity.oldPosition.x = entity.position.x;
+    entity.oldPosition.y = entity.position.y;
+    entity.oldPosition.z = entity.position.z;
+
+
+
+    if (Math.abs(entity.fakeVelocity.x) + Math.abs(entity.fakeVelocity.z) > 0.15) {
+        return true;
+    }
+    return false;
+};
 
 //mining/building
 function digBlock(bot, x, y, z) {
@@ -244,6 +277,7 @@ function digBlock(bot, x, y, z) {
     }
     bot.dunder.lookY = y;
     if (canMine && !bot.targetDigBlock) {
+        //bot.dunder.isDigging = 2;
         bot.dunder.destinationTimer = 30 + (getDigTime(bot, x, y, z, bot.entity.isInWater, true) / 50);
         console.log(getDigTime(bot, x, y, z, false, true) + ", " + bot.dunder.destinationTimer);
         bot.dig(bot.blockAt(new Vec3(x, y, z))).catch(e => {});
@@ -351,8 +385,70 @@ function findCommander(bot) {
     return leTarget;
 };
 
+
+
+function getEntityFloorPos(bot, position, obj) {
+    if (!obj) {
+        obj = {x:0,y:0,z:0};
+    }
+    obj.x = Math.floor(position.x);
+    obj.y = Math.floor(position.y)-1;
+    obj.z = Math.floor(position.z);
+    if (!blockStand(bot, obj.x, obj.y, obj.z)) {
+        if (blockStand(bot, obj.x, obj.y - 1, obj.z)) {
+            obj.y--;
+        } else {
+            if (blockStand(bot, obj.x - 1, obj.y, obj.z)) {
+                obj.x--;
+            } else if (blockStand(bot, obj.x + 1, obj.y, obj.z)) {
+                obj.x++;
+            } else if (blockStand(bot, obj.x, obj.y, obj.z - 1)) {
+                obj.z--;
+            } else if (blockStand(bot, obj.x, obj.y, obj.z + 1)) {
+                obj.z++;
+            } else if (blockStand(bot, obj.x - 1, obj.y, obj.z - 1)) {
+                obj.x--;
+                obj.z--;
+            } else if (blockStand(bot, obj.x + 1, obj.y, obj.z - 1)) {
+                obj.x++;
+                obj.z--;
+            } else if (blockStand(bot, obj.x - 1, obj.y, obj.z + 1)) {
+                obj.x--;
+                obj.z++;
+            } else if (blockStand(bot, obj.x + 1, obj.y, obj.z + 1)) {
+                obj.x++;
+                obj.z++;
+            } else if (blockStand(bot, obj.x, obj.y - 2, obj.z)) {
+                obj.y -= 2;
+            } else if (blockStand(bot, obj.x, obj.y - 3, obj.z)) {
+                obj.y -= 3;
+            }
+        }
+    }
+    obj.y++;
+    return obj;
+};
+
+function visibleFromPos(bot, pos1, pos2) {
+    //console.log(entity.position.offset(0, entity.height / 2, 0).minus(bot.entity.position.offset(0, 1.6, 0)).normalize());
+    var theRaycast = bot.world.raycast(pos1.offset(0, 1.6, 0), pos2.offset(0.5, 0.5, 0.5).minus(pos1.offset(0, 1.6, 0)).normalize(), 16);
+    var returner = false;
+    if (theRaycast && theRaycast.intersect &&
+        theRaycast.intersect.x >= pos2.x - 0.0 && theRaycast.intersect.x <= pos2.x + 1.0 &&
+        theRaycast.intersect.y >= pos2.y - 0.0 && theRaycast.intersect.y <= pos2.y + 1.0 &&
+        theRaycast.intersect.z >= pos2.z - 0.0 && theRaycast.intersect.z <= pos2.z + 1.0
+      /*dist3d(pos1.x, pos1.y, pos1.z, theRaycast.intersect.x, theRaycast.intersect.y, theRaycast.intersect.z) <
+        dist3d(pos1.x, pos1.y, pos1.z, pos2.x, pos2.y, pos2.z) - 0.5*/) {
+        returner = true;
+    }
+    return returner;
+};
+
 //Math
 
 function dist3d(x1, y1, z1, x2, y2, z2) {
     return Math.sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1) + (z2 - z1)*(z2 - z1));
+};
+function distMan3d(x1, y1, z1, x2, y2, z2) {//Ideally a cheaper function
+    return Math.abs(x2 - x1) + Math.abs(y2 - y1) + Math.abs(z2 - z1);
 };
