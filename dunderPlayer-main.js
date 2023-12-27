@@ -57,6 +57,10 @@ Bucket task system
 
 
 TODO:
+(*) - randomly stops working on certain paths(believed to be a "block update" bug or "ghost air blocks", should attempt to create
+general solution for this anyhow)
+(*) - randomly stopping on the path after switching from a mining state
+
 (*) - 'Leaves above' bug for pathfinder
 (@) Clutching for pathfinder(and 'don't clutch' such as waterloggables)
 
