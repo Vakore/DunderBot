@@ -11,6 +11,19 @@ function getHeldItem(bot) {
     return "";
 };
 
+function hasItemCount(bot, match) {
+    var returner = 0;
+    var inven = bot.inventory.slots;
+    for (var i = 0; (i < inven.length); i++) {
+        if (inven[i] == null) {
+            continue;
+        } else if (match(inven[i].name)) {
+            returner += inven[i].count;
+        }
+    }
+    return returner;
+};
+
 function hasItem(bot, itemNames) {
     var doesHaveItem = false;
     var inven = bot.inventory.slots;
@@ -28,7 +41,19 @@ function hasItem(bot, itemNames) {
     //console.log(bot.inventory.items());
 };
 
-function equipItem(bot, itemNames, dest) {
+function afterFuncAfterFunc(bot, equippedItem, dest, e) {
+        console.log("canEquip: " + e);
+        for (var i = 0; i < bot.dunder.equipPackets.length; i++) {
+            if (bot.dunder.equipPackets[i].slot == equippedItem && bot.dunder.equipPackets[i].destination == dest) {
+                bot.dunder.equipPackets.splice(i, 1);
+            }
+        }
+        if (e) {e();}
+        //console.log(bot.quickBarSlot + ", " + equippedItem);
+        //attackTimer = 0;
+};
+
+function equipItem(bot, itemNames, dest, afterFunc) {
     var finalItemName = null;
     //console.log(bot.inventory);
     var inven = bot.inventory.items();
@@ -75,16 +100,10 @@ function equipItem(bot, itemNames, dest) {
         }
         bot.dunder.equipPackets.push({"slot":equippedItem, "destination":dest, "time":10});
         //attackTimer = 0;
-        bot.equip(inven[equippedItem], dest, function(e) {
-            //console.log("canEquip: " + e);
-            for (var i = 0; i < bot.dunder.equipPackets.length; i++) {
-                if (bot.dunder.equipPackets[i].slot == equippedItem && bot.dunder.equipPackets[i].destination == dest) {
-                    bot.dunder.equipPackets.splice(i, 1);
-                }
-            }
-            //console.log(bot.quickBarSlot + ", " + equippedItem);
-            //attackTimer = 0;
-        });
+        /*if (dest == "hand") {
+            bot.heldItem = inven[equippedItem];
+        }*/
+        bot.equip(inven[equippedItem], dest).then(afterFuncAfterFunc(bot, equippedItem, dest, afterFunc));
     }
     //console.log("jkl: " + itemNames + ", " + equippedItem);
     return finalItemName;
@@ -279,7 +298,7 @@ function digBlock(bot, x, y, z) {
     if (canMine && !bot.targetDigBlock) {
         //bot.dunder.isDigging = 2;
         bot.dunder.destinationTimer = 30 + (getDigTime(bot, x, y, z, bot.entity.isInWater, true) / 50);
-        console.log(getDigTime(bot, x, y, z, false, true) + ", " + bot.dunder.destinationTimer);
+        //console.log(getDigTime(bot, x, y, z, false, true) + ", " + bot.dunder.destinationTimer);
         bot.dig(bot.blockAt(new Vec3(x, y, z))).catch(e => {});
     }
 };
@@ -295,12 +314,16 @@ function getPlacedBlock(bot, x, y, z) {
     return returnTrue;
 };
 
-function placeBlock(bot, x, y, z, placeBackwards) {
+function placeBlock(bot, x, y, z, placeBackwards, extraOptions) {
     //console.log("stopping on own terms");
     bot.stopDigging();
     var canPlace = false;
     var placeOffSet = new Vec3(0, 0, 0);
-    equipItem(bot, garbageBlocks, "hand");
+    if (!extraOptions || !extraOptions.useBlocks) {
+        equipItem(bot, garbageBlocks, "hand");
+    } else {
+        equipItem(bot, extraOptions.useBlocks, "hand");
+    }
     //(!!!) might need to make them negative
     if (bot.blockAt(new Vec3(x, y, z)).shapes.length > 0) {
         canPlace = false;
@@ -329,14 +352,12 @@ function placeBlock(bot, x, y, z, placeBackwards) {
             i = bot.dunder.blockPackets.length;
         }
     }
-    if (bot.targetDigBlock || !bot.entity.heldItem) {canPlace = false;}
+    if (bot.targetDigBlock /*|| !bot.entity.heldItem*/) {canPlace = false;}
     if (canPlace) {
         bot.dunder.blockPackets.push({"x":x,"y":y,"z":z});//used in case of weirdness from the server
         bot.lookAt(new Vec3(x, y, z), 100);
         //attackTimer = 0;
-        var placeBlockVar = bot.placeBlock(bot.blockAt(new Vec3(x, y, z)), placeOffSet);
-        placeBlockVar.catch(function(e) {console.log("place block error: \n" + e);});
-        placeBlockVar.then(function(e) {
+        bot.placeBlock(bot.blockAt(new Vec3(x, y, z)), placeOffSet).then(function(e) {
             //attackTimer = 0;
             //console.log("alerted " + e);
             for (var i = 0; i < bot.dunder.blockPackets.length; i++) {
@@ -345,7 +366,7 @@ function placeBlock(bot, x, y, z, placeBackwards) {
                     i = bot.dunder.blockPackets.length;
                 }
             }
-        });
+        }).catch(function(e) {console.log("place block error: \n" + e);});
         var swingArmPls = true;
         for (var i = 0; i < bot.dunder.blockPackets.length; i++) {
             if (bot.dunder.blockPackets[i].x == x && bot.dunder.blockPackets[i].y == y && bot.dunder.blockPackets[i].z == z) {
@@ -442,6 +463,129 @@ function visibleFromPos(bot, pos1, pos2) {
         returner = true;
     }
     return returner;
+};
+
+
+
+
+function placeCraftingTable(bot) {
+            let craftingCheckers = {};
+            craftingCheckers[Math.floor(bot.entity.position.x - bot.physics.playerHalfWidth) + "." + Math.floor(bot.entity.position.y) + "." + Math.floor(bot.entity.position.z - bot.physics.playerHalfWidth)] = {
+                x:Math.floor(bot.entity.position.x - bot.physics.playerHalfWidth),
+                y:Math.floor(bot.entity.position.y),
+                z:Math.floor(bot.entity.position.z - bot.physics.playerHalfWidth),
+                valid:false,
+                open:true,
+            };
+
+            craftingCheckers[Math.floor(bot.entity.position.x + bot.physics.playerHalfWidth) + "." + Math.floor(bot.entity.position.y) + "." + Math.floor(bot.entity.position.z - bot.physics.playerHalfWidth)] = {
+                x:Math.floor(bot.entity.position.x + bot.physics.playerHalfWidth),
+                y:Math.floor(bot.entity.position.y),
+                z:Math.floor(bot.entity.position.z - bot.physics.playerHalfWidth),
+                valid:false,
+                open:true,
+            };
+
+            craftingCheckers[Math.floor(bot.entity.position.x - bot.physics.playerHalfWidth) + "." + Math.floor(bot.entity.position.y) + "." + Math.floor(bot.entity.position.z + bot.physics.playerHalfWidth)] = {
+                x:Math.floor(bot.entity.position.x - bot.physics.playerHalfWidth),
+                y:Math.floor(bot.entity.position.y),
+                z:Math.floor(bot.entity.position.z + bot.physics.playerHalfWidth),
+                valid:false,
+                open:true,
+            };
+
+            craftingCheckers[Math.floor(bot.entity.position.x + bot.physics.playerHalfWidth) + "." + Math.floor(bot.entity.position.y) + "." + Math.floor(bot.entity.position.z + bot.physics.playerHalfWidth)] = {
+                x:Math.floor(bot.entity.position.x + bot.physics.playerHalfWidth),
+                y:Math.floor(bot.entity.position.y),
+                z:Math.floor(bot.entity.position.z + bot.physics.playerHalfWidth),
+                valid:false,
+                open:true,
+            };
+            let craftingCheckers2 = [];
+            for (var i in craftingCheckers) {
+                craftingCheckers2.push(craftingCheckers[i]);
+                //bot.chat("/particle minecraft:spit " + craftingCheckers[i].x + " " + craftingCheckers[i].y + " " + craftingCheckers[i].z);
+            }
+            let currentCraftingCheckers2Length = craftingCheckers2.length;
+            let placeLocation = [];
+            for (var i = 0; i < currentCraftingCheckers2Length; i++) {
+                if (craftingCheckers2[i].open) {
+                    let validPushers = [true, true, true, true];
+                    for (var j = 0; j < craftingCheckers2.length; j++) {
+                        if (craftingCheckers2[j].x == craftingCheckers2[i].x-1 && craftingCheckers2[j].z == craftingCheckers2[i].z) {
+                            validPushers[0] = false;
+                        }
+                        if (craftingCheckers2[j].x == craftingCheckers2[i].x+1 && craftingCheckers2[j].z == craftingCheckers2[i].z) {
+                            validPushers[1] = false;
+                        }
+                        if (craftingCheckers2[j].x == craftingCheckers2[i].x && craftingCheckers2[j].z == craftingCheckers2[i].z-1) {
+                            validPushers[2] = false;
+                        }
+                        if (craftingCheckers2[j].x == craftingCheckers2[i].x && craftingCheckers2[j].z == craftingCheckers2[i].z+1) {
+                            validPushers[3] = false;
+                        }
+                    }
+
+                    if (i < Infinity && validPushers[0]) {
+                        craftingCheckers2.push({
+                            x:craftingCheckers2[i].x-1,
+                            y:craftingCheckers2[i].y,
+                            z:craftingCheckers2[i].z,
+                            open:true,
+                        });
+                        if (blockAir(bot, craftingCheckers2[i].x-1, craftingCheckers2[i].y, craftingCheckers2[i].z)) {
+                            placeLocation = [craftingCheckers2[i].x-1, craftingCheckers2[i].y, craftingCheckers2[i].z];
+                            i = Infinity;
+                        }
+                    }
+
+                    if (i < Infinity && validPushers[1]) {
+                        craftingCheckers2.push({
+                            x:craftingCheckers2[i].x+1,
+                            y:craftingCheckers2[i].y,
+                            z:craftingCheckers2[i].z,
+                            open:true,
+                        });
+                        if (blockAir(bot, craftingCheckers2[i].x+1, craftingCheckers2[i].y, craftingCheckers2[i].z)) {
+                            placeLocation = [craftingCheckers2[i].x+1, craftingCheckers2[i].y, craftingCheckers2[i].z];
+                            i = Infinity;
+                        }
+                    }
+
+                    if (i < Infinity && validPushers[2]) {
+                        craftingCheckers2.push({
+                            x:craftingCheckers2[i].x,
+                            y:craftingCheckers2[i].y,
+                            z:craftingCheckers2[i].z-1,
+                            open:true,
+                        });
+                        if (blockAir(bot, craftingCheckers2[i].x, craftingCheckers2[i].y, craftingCheckers2[i].z-1)) {
+                            placeLocation = [craftingCheckers2[i].x, craftingCheckers2[i].y, craftingCheckers2[i].z-1];
+                            i = Infinity;
+                        }
+                    }
+
+                    if (i < Infinity && validPushers[3]) {
+                        craftingCheckers2.push({
+                            x:craftingCheckers2[i].x,
+                            y:craftingCheckers2[i].y,
+                            z:craftingCheckers2[i].z+1,
+                            open:true,
+                        });
+                        if (blockAir(bot, craftingCheckers2[i].x, craftingCheckers2[i].y, craftingCheckers2[i].z+1)) {
+                            placeLocation = [craftingCheckers2[i].x, craftingCheckers2[i].y, craftingCheckers2[i].z+1];
+                            i = Infinity;
+                        }
+                    }
+                }
+            }
+            if (placeLocation.length > 0) {
+                equipItem(bot, ["crafting_table"], "hand"/*, () => {placeBlock(bot, placeLocation[0], placeLocation[1], placeLocation[2], false, {useBlocks:["crafting_table"]})}*/);
+                setTimeout( () => {placeBlock(bot, placeLocation[0], placeLocation[1], placeLocation[2], false, {useBlocks:["crafting_table"]})}, 50);
+                console.log("pls? " + bot.heldItem);
+            } else {
+                console.log("epic embed fail");
+            }
 };
 
 //Math

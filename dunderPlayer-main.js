@@ -7,7 +7,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 //--------------SETTINGS-----------------------
-var useWebInventory = false;//Port is 3000
+var useWebInventory = true;//Port is 3000
 var version = "1.20.1";//"1.20.1";
 var host = "localhost";//localhost for LAN worlds
 var port = 25565;//25565;//25565 is default port for most servers
@@ -57,6 +57,23 @@ Bucket task system
 
 
 TODO:
+
+(!!!)
+- mining down one block occasionally on spawn
+
+- prioritizing picking up items versus mining, ideally both at the same time
+- "diagonal staircase with block" edgecase and similar(i.e. lava)
+- unreachable block case(path spam)
+- unfindable block case("freezes")
+- unreachable item case(path spam)
+- unfindable item case("freezes")
+- for both unreachable cases not having blocks needs to be accounted for eventually(more of a pathfinding thing)
+
+- various crafting bugs(make sure have items needed to craft item before crafting?)
+- crafting table placement, ideally pick up as well
+
+- jump sprinting stuck cases when inside tree and path tells to go around it
+
 (*) - randomly stops working on certain paths(believed to be a "block update" bug or "ghost air blocks", should attempt to create
 general solution for this anyhow)
 (*) - randomly stopping on the path after switching from a mining state
@@ -367,7 +384,7 @@ function makeBots(cbtm) {
 
         bots[cbtm].dunder.jumpTarget = bots[cbtm].entity.position;
         bots[cbtm].dunder.spawned = true;
-        setTimeout(dunderTaskInitialize, 1000, bots[cbtm]);//give it some time
+        //setTimeout(dunderTaskInitialize, 200, bots[cbtm]);//give it some time
 
         //console.log(bot.lookAt);
         //setInterval(runBot, 50, bots[cbtm]);
@@ -673,34 +690,36 @@ for (var i in bot.entities) {
     } else if (bot.dunder.masterState == "mining") {
         bot.dunder.state = "mining";
         //console.log("e");
-        if (dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) > 5 || !bot.entity.onGround /*|| !visibleFromPos(bot, bot.entity.position, new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z)) || bot.dunderTaskDetails.failedPathfind*/) {
+        if (bot.dunderTaskDetails.count > 0 && ( dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) > 5 || !bot.entity.onGround || !bot.dunderTaskDetails.failedPathfind && !visibleFromPos(bot, bot.entity.position, new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z)) && !(dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) <= 5 && bot.dunder.movesToGo.length <= 1 && bot.dunder.movesToGo[0] && visibleFromPos(bot, new Vec3(bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z), new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z))) )) {
             bot.dunder.goal.x = bot.dunderTaskDetails.x;
             bot.dunder.goal.y = bot.dunderTaskDetails.y;
             bot.dunder.goal.z = bot.dunderTaskDetails.z;
             bot.dunder.goal.reached = false;
             if (bot.dunder.movesToGo.length <= 1 && !bot.dunder.findingPath) {
-                 bot.dunder.pathGoalForgiveness = 3;
-                 findPath(bot, dunderBotPathfindDefaults, 1500, Math.floor(bot.dunderTaskDetails.x), Math.floor(bot.dunderTaskDetails.y), Math.floor(bot.dunderTaskDetails.z), false, false);
-                /*if (bot.dunderTaskDetails.failedPathfind) {
-                     bot.dunder.pathGoalForgiveness = 5;
+                 if (dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) > 5) {
+                     bot.dunder.pathGoalForgiveness = 3;
                      findPath(bot, dunderBotPathfindDefaults, 1500, Math.floor(bot.dunderTaskDetails.x), Math.floor(bot.dunderTaskDetails.y), Math.floor(bot.dunderTaskDetails.z), false, false);
-                } else {
-                     bot.dunder.pathGoalForgiveness = 5;
-                     findPath(bot, dunderBotPathfindDefaults, 500, Math.floor(bot.dunderTaskDetails.x), Math.floor(bot.dunderTaskDetails.y), Math.floor(bot.dunderTaskDetails.z), false, false, {mustBeVisible:true});
-                }*/
+                 } else {
+                     bot.dunder.pathGoalForgiveness = 4;
+                     findPath(bot, dunderBotPathfindDefaults, 20, Math.floor(bot.dunderTaskDetails.x), Math.floor(bot.dunderTaskDetails.y), Math.floor(bot.dunderTaskDetails.z), false, false, {mustBeVisible:true});
+                 }
             }
             strictFollow(bot);
         } else {
-            //dunderTaskLog("isit: " + visibleFromPos(bot, bot.entity.position, new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z)));
-            equipTool(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z);
-            bot.lookAt(new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z).offset(0.5, 0.5, 0.5), 100);
-            digBlock(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z);
             if (blockSolid(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z)) {
+                equipTool(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z);
                 bot.lookAt(new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z).offset(0.5, 0.5, 0.5), 100);
+                digBlock(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z);
             } else if (!bot.dunderTaskCompleted && bot.dunderTaskCurrent == "mining") {
                 bot.dunderTaskDetails.count--;
                 bot.dunderTaskDetails.failedPathfind = false;
-                if (bot.dunderTaskDetails.count > 0 && bot.dunderTaskDetails.blocksList.length > 0) {
+                if (bot.dunderTaskDetails.count > 0 && bot.dunderTaskDetails.blocksList.length <= 0) {
+                    bot.dunderTaskDetails.blocksList = bot.findBlocks({
+                        matching: bot.dunderTaskDetails.options.block,
+                        maxDistance: bot.dunderTaskDetails.options.distance,
+                        useExtraInfo: bot.dunderTaskDetails.options.useExtraInfo || false,
+                        count:1//(options.count) ? options.count : 1
+                    });
                 }
 
                 if (bot.dunderTaskDetails.count > 0 && bot.dunderTaskDetails.blocksList.length > 0) {
@@ -722,8 +741,39 @@ for (var i in bot.entities) {
                     console.log(bot.dunderTaskDetails.blocksList);
                     dunderTaskLog("finished mining block, "  + bot.dunderTaskDetails.count + " left.");
                 } else {
-                    dunderTaskLog("finished mining block, none left.");
-                    bot.dunderTaskCompleted = true;
+                    if (bot.dunderTaskDetails.finishCondition == 0) {
+                        dunderTaskLog("finished mining block, none left.");
+                        bot.dunderTaskCompleted = true;
+                    } else {
+                        if (hasItemCount(bot, bot.dunderTaskDetails.itemCondition) >= bot.dunderTaskDetails.itemTotal) {
+                            dunderTaskLog("finished collecting blocks, none left." + hasItemCount(bot, bot.dunderTaskDetails.itemCondition) + " " + bot.dunderTaskDetails.itemTotal);
+                            bot.dunderTaskCompleted = true;
+                        } else {
+                            bot.dunderTaskDetails.itemsList = [];
+                            for (var i in bot.entities) {
+                                if (bot.entities[i].name == "item") {
+                                    if (bot.entities[i].metadata && bot.entities[i].metadata[8] && bot.entities[i].metadata[8].itemId && bot.dunderTaskDetails.itemCondition(bot.registry.items[bot.entities[i].metadata[8].itemId].name)) {
+                                        //dunderTaskLog("item found " + bot.registry.items[bot.entities[i].metadata[8].itemId].name);
+                                        bot.dunderTaskDetails.itemsList.push(bot.entities[i].position);
+                                    }
+                                }
+                            }
+
+                            //console.log(bot.dunderTaskDetails.itemsList + " " + bot.dunderTaskDetails.itemTotal);
+                            if (bot.dunderTaskDetails.itemsList.length > 0) {
+                                bot.dunder.goal.x = Math.floor(bot.dunderTaskDetails.itemsList[0].x);
+                                bot.dunder.goal.y = Math.floor(bot.dunderTaskDetails.itemsList[0].y);
+                                bot.dunder.goal.z = Math.floor(bot.dunderTaskDetails.itemsList[0].z);
+                                bot.dunder.goal.reached = false;
+                                if (bot.dunder.movesToGo.length <= 1 && !bot.dunder.findingPath) {
+                                    bot.dunder.pathGoalForgiveness = 0;
+                                    findPath(bot, dunderBotPathfindDefaults, 500, Math.floor(bot.dunder.goal.x), Math.floor(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, false, {mustBeVisible:true});
+                                } else {
+                                    strictFollow(bot);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

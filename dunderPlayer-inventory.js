@@ -25,7 +25,10 @@ app.post('/write', function (req, res) {
     gRes = res;
     const body = req.body; // your request body
 
-    // your "magical" code
+    if (!bots[0].dunder) {
+        res.send({});
+        return;
+    }
     /*console.log(req.body);
     console.log(bots[0].health);
     console.log(bots[0].foodSaturation);

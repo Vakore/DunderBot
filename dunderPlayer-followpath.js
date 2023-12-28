@@ -632,7 +632,7 @@ function strictFollow(bot) {
 
         //extend the path when near the end of a path that hasn't reached the goal yet due to chunk borders
         if (bot.dunder.searchingPath <= 0 && !bot.dunder.goal.reached && bot.dunder.movesToGo.length > 0 && bot.dunder.movesToGo.length <= 10 && (bot.dunder.goal.y != "no" && distMan3d(bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z, bot.dunder.goal.x, bot.dunder.goal.y, bot.dunder.goal.z) > bot.dunder.pathGoalForgiveness || bot.dunder.goal.y == "no" && distMan3d(bot.dunder.movesToGo[0].x, 0, bot.dunder.movesToGo[0].z, bot.dunder.goal.x, 0, bot.dunder.goal.z) > bot.dunder.pathGoalForgiveness)/*bot.dunder.movesToGo[0].x != bot.dunder.goal.x | bot.dunder.movesToGo[0].y != bot.dunder.goal.y & bot.dunder.goal.y != "no" | bot.dunder.movesToGo[0].z != bot.dunder.goal.z*/) {
-                if (bot.targetDigBlock) {bot.stopDigging();}
+                //if (bot.targetDigBlock) {bot.stopDigging();}
                 console.log("Extending path through chunks...");
                 if (bot.dunder.goal.y != "no") {
                     findPath(bot, dunderBotPathfindDefaults, 1400, Math.floor(bot.dunder.goal.x), Math.round(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, (!bot.dunder.goal.isMobile && false));//Extending path here. "moveType" is not defined, line 1471

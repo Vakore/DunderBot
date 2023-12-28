@@ -10,6 +10,34 @@ function createDunderTask(bot, taskType, options) {
 function acceptDunderTask(bot, taskType, options) {
   let validTask = true;
   switch (taskType) {
+    case "placeCrafting":
+        console.log("qwerty");
+        placeCraftingTable(bot);
+        setTimeout((bot) => {bot.dunderTaskCompleted = true;}, 100, bot);
+        bot.dunderTaskCurrent = "placeCrafting";
+        //bot.dunder.masterState = "placecrafting";
+        //bot.dunder.state = "placecrafting";
+    break;
+
+    case "craft":
+        let item = bot.registry.itemsByName[options.name];
+        let craftingTable = bot.findBlock({
+            matching: (block) => (block.name == "crafting_table"),
+            distance:5,
+            useExtraInfo:true,
+        });
+        let recipes = bot.recipesFor(item.id, null, 1, craftingTable);
+        bot.dunderTaskCurrent = "craft";
+        bot.craft(recipes[0], 1, craftingTable);
+        setTimeout((bot) => {bot.dunderTaskCompleted = true;}, 500, bot);
+        bot.dunder.masterState = "craft";
+        bot.dunder.state = "craft";
+    break;
+
+    case "drop":
+        
+    break;
+
     case "sleep":
         var bedBlock = bot.findBlock({
             matching: (block) => (bot.isABed(block) && bot.parseBedMetadata(block).occupied == 0),
@@ -51,9 +79,17 @@ function acceptDunderTask(bot, taskType, options) {
                 matching: options.block,
                 maxDistance: options.distance,
                 useExtraInfo: options.useExtraInfo || false,
-                count:(options.count) ? options.count : 1
+                count:1//(options.count) ? options.count : 1
             });
             
+            //vein stuff
+            /*if (pathToBlocks.length > 0) {
+                
+                let openMineNodes = [pathToBlocks[0]];
+                while (openMineNodes.length > 0) {
+                }
+            }*/
+
             var pathToBlock = null;
             if (pathToBlocks.length > 0) {
                 pathToBlock = pathToBlocks[0];
@@ -73,7 +109,10 @@ function acceptDunderTask(bot, taskType, options) {
             }
 
             if (pathToBlock) {
-                bot.dunderTaskDetails = {blocksList:pathToBlocks, x:pathToBlock.x, y:pathToBlock.y, z:pathToBlock.z, count:(options.count) ? options.count : 1};
+                bot.dunderTaskDetails = {itemsList:[], blocksList:pathToBlocks, x:pathToBlock.x, y:pathToBlock.y, z:pathToBlock.z, count:(options.count) ? options.count : 1, options:options, itemCondition:options.itemCondition, finishCondition:options.finishCondition, itemTotal:0};
+                if (bot.dunderTaskDetails.finishCondition != 0) {
+                    bot.dunderTaskDetails.itemTotal = hasItemCount(bot, bot.dunderTaskDetails.itemCondition) + bot.dunderTaskDetails.count;
+                }
                 bot.dunder.masterState = "mining";
                 bot.dunderTaskCurrent = "mining";
             }
@@ -151,29 +190,4 @@ function acceptDunderTask(bot, taskType, options) {
         }
     break;
   }
-};
-
-
-function dunderTaskInitialize(bot) {
-    dunderTaskLog("Initiallizing tasks!");
-    //createDunderTask(bot, "goto", {"block":(block) => (block.name == "nether_portal" && block.position && blockSolid(bot, block.position.x, block.position.y-1, block.position.z)), "distance":30, "useExtraInfo":true});
-
-  //for (var i = 0; i < 10; i++) {
-    //createDunderTask(bot, "goto", {"block":(block) => (block.name.includes("_log")), "distance":30, "pathGoalForgiveness":8});
-    //createDunderTask(bot, "goto", {"block":(block) => (block.name.includes("_log")), "distance":9, "pathGoalForgiveness":5});
-  createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("_log") && blockExposed(bot, block)), "distance":30, "count":20, "useExtraInfo":true});
-  //}
-  createDunderTask(bot, "goto", {"block":(block) => (bot.isABed(block) && bot.parseBedMetadata(block).occupied == 0), "distance":30, "pathGoalForgiveness":3});
-  createDunderTask(bot, "sleep");
-  createDunderTask(bot, "wake");
-  createDunderTask(bot, "setMasterState", {"masterState":"idle"});
-
-
-    /*createDunderTask(bot, "goto", {"block":(block) => (block.name.includes("_log") && blockExposed(bot, block)), "distance":30, "pathGoalForgiveness":0});
-    createDunderTask(bot, "goto", {"player":"Vakore", "pathGoalForgiveness":0});
-    createDunderTask(bot, "goto", {"block":(block) => (block.name.includes("_log")), "distance":30, "pathGoalForgiveness":0});
-    createDunderTask(bot, "setMasterState", {"masterState":"idle"});*/
-
-    //createDunderTask(bot, "sleep");
-    bot.dunderTaskCompleted = true;
 };

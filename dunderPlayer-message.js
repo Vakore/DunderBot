@@ -4,6 +4,10 @@ function parseMessage(bot, username, msg) {
   if (commanders.includes(username)) {
     //console.log(username == "Vakore");
     switch (msg[0].toLowerCase()) {
+        case "craftin":
+            placeCraftingTable(bot);
+        break;
+
         case "d":
             console.log("DDDDDDDDDD");
             console.log(JSON.stringify(bot.dunder.goal));

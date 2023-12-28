@@ -11,7 +11,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //Only change values below this line
 
 //--------------SETTINGS-----------------------
-useWebInventory = false;//Port is 3000
+useWebInventory = true;//Port is 3000
 version = "1.20.1";//"1.20.1";
 host = "localhost";//localhost for LAN worlds
 port = 25565;//25565;//25565 is default port for most servers
@@ -28,4 +28,30 @@ function dunderTaskManager(bot) {
     if (bot.dunderTasks.length == 0 && bot.dunderTaskCompleted) {
         //createDunderTask(bot, "goto", {"player":"Vakore"});
     }
+};
+
+function dunderTaskInitialize(bot) {
+    dunderTaskLog("Initiallizing tasks!");
+    /*for (var i in bot.registry) {
+    console.log(i);
+    }*/
+  //createDunderTask(bot, "goto", {"block":(block) => (block.name == "nether_portal" && block.position && blockSolid(bot, block.position.x, block.position.y-1, block.position.z)), "distance":30, "useExtraInfo":true});
+
+  //createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("_log") && blockExposed(bot, block)), "distance":30, "count":20, "useExtraInfo":true});
+  //createDunderTask(bot, "goto", {"block":(block) => (bot.isABed(block) && bot.parseBedMetadata(block).occupied == 0), "distance":30, "pathGoalForgiveness":3});
+  //createDunderTask(bot, "sleep");
+  //createDunderTask(bot, "wake");
+  //createDunderTask(bot, "setMasterState", {"masterState":"idle"});
+    //finishCondition: positive number indicates adding that many, negative number indicates obtaining that total, 0 indicates just mining blocks
+    createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("diamond_block") && blockExposed(bot, block)), "distance":30, "count":20, "useExtraInfo":true, "finishCondition":2, "itemCondition":function(itemName) {return itemName.includes("diamond_block");}});
+    //createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("coal_ore") && blockExposed(bot, block)), "distance":30, "count":20, "useExtraInfo":true, "finishCondition":2, "itemCondition":function(itemName) {return itemName.includes("coal");}});
+    //createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("_log") && blockExposed(bot, block)), "distance":30, "count":20, "useExtraInfo":true, "finishCondition":2, "itemCondition":function(itemName) {return itemName.includes("_log");}});
+    /*createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("_log") && blockExposed(bot, block)), "distance":30, "count":2, "useExtraInfo":true, "finishCondition":2, "itemCondition":function(itemName) {return itemName.includes("_log");}});
+    createDunderTask(bot, "craft", {"name":"oak_planks"});
+    createDunderTask(bot, "craft", {"name":"crafting_table"});
+    createDunderTask(bot, "craft", {"name":"oak_planks"});
+    createDunderTask(bot, "craft", {"name":"stick"});
+    createDunderTask(bot, "placeCrafting");
+    createDunderTask(bot, "craft", {"name":"wooden_sword"});*/
+    bot.dunderTaskCompleted = true;
 };
