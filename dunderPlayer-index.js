@@ -45,7 +45,10 @@ function dunderTaskInitialize(bot) {
     //finishCondition: positive number indicates adding that many, negative number indicates obtaining that total, 0 indicates just mining blocks
     createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("diamond_block") && blockExposed(bot, block)), "distance":30, "count":20, "useExtraInfo":true, "finishCondition":2, "itemCondition":function(itemName) {return itemName.includes("diamond_block");}});
     //createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("coal_ore") && blockExposed(bot, block)), "distance":30, "count":20, "useExtraInfo":true, "finishCondition":2, "itemCondition":function(itemName) {return itemName.includes("coal");}});
-    //createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("_log") && blockExposed(bot, block)), "distance":30, "count":20, "useExtraInfo":true, "finishCondition":2, "itemCondition":function(itemName) {return itemName.includes("_log");}});
+
+    //createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("_log") /*&& blockExposed(bot, block)*/), "distance":30, "count":20, "useExtraInfo":true, "finishCondition":2, "itemCondition":function(itemName) {return itemName.includes("_log");}});
+    createDunderTask(bot, "setMasterState", {"masterState":"idle"});
+
     /*createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("_log") && blockExposed(bot, block)), "distance":30, "count":2, "useExtraInfo":true, "finishCondition":2, "itemCondition":function(itemName) {return itemName.includes("_log");}});
     createDunderTask(bot, "craft", {"name":"oak_planks"});
     createDunderTask(bot, "craft", {"name":"crafting_table"});

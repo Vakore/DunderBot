@@ -689,8 +689,109 @@ for (var i in bot.entities) {
         bot.dunder.state = "pathfinding2";
     } else if (bot.dunder.masterState == "mining") {
         bot.dunder.state = "mining";
+        if (bot.dunderTaskDetails.x != null && blockSolid(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z) && (dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) > 5 || !bot.entity.onGround || !bot.dunderTaskDetails.failedPathfind && !visibleFromPos(bot, bot.entity.position, new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z)) && !(dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) <= 5 && bot.dunder.movesToGo.length <= 1 && bot.dunder.movesToGo[0] && visibleFromPos(bot, new Vec3(bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z), new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z))) )) {
+            bot.dunder.goal.x = bot.dunderTaskDetails.x;
+            bot.dunder.goal.y = bot.dunderTaskDetails.y;
+            bot.dunder.goal.z = bot.dunderTaskDetails.z;
+            bot.dunder.goal.reached = false;
+            if (bot.dunder.movesToGo.length <= 1 && !bot.dunder.findingPath) {
+                 if (dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) > 5) {
+                     if (bot.dunderTaskDetails.failedPathfind && bot.dunderTaskDetails.failedPathfind.x == Math.floor(bot.dunderTaskDetails.x) && bot.dunderTaskDetails.failedPathfind.y == Math.floor(bot.dunderTaskDetails.y) && bot.dunderTaskDetails.failedPathfind.z == Math.floor(bot.dunderTaskDetails.z)) {
+                         for (var i = 0; i < bot.dunderTaskDetails.blocksList.length; i++) {
+                             bot.dunderTaskDetails.veinExcluders[bot.dunderTaskDetails.blocksList[i].x + "_" + bot.dunderTaskDetails.blocksList[i].y + "_" + bot.dunderTaskDetails.blocksList[i].z] = true;
+                         }
+                         console.log(bot.dunderTaskDetails.x + "_" + bot.dunderTaskDetails.y + "_" + bot.dunderTaskDetails.z);
+                         bot.dunderTaskDetails.veinExcluders[bot.dunderTaskDetails.x + "_" + bot.dunderTaskDetails.y + "_" + bot.dunderTaskDetails.z] = true;
+                         bot.dunderTaskDetails.blocksList = [];
+                         bot.dunderTaskDetails.x = null;
+                     } else {
+                         console.log(bot.dunderTaskDetails.failedPathfind + ", " + bot.dunderTaskDetails);
+                         bot.dunder.pathGoalForgiveness = 3;
+                         findPath(bot, dunderBotPathfindDefaults, 1500, Math.floor(bot.dunderTaskDetails.x), Math.floor(bot.dunderTaskDetails.y), Math.floor(bot.dunderTaskDetails.z), false, false);
+                     }
+                 } else {
+                     console.log("trying");
+                     bot.dunder.pathGoalForgiveness = 3;
+                     findPath(bot, dunderBotPathfindDefaults, 500, Math.floor(bot.dunderTaskDetails.x), Math.floor(bot.dunderTaskDetails.y), Math.floor(bot.dunderTaskDetails.z), false, false, {mustBeVisible:true});
+                 }
+            } else if (bot.dunder.movesToGo.length > 0) {
+                strictFollow(bot);
+            }
+        } else if (bot.dunderTaskDetails.x != null && blockSolid(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z)) {
+             if (dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) <= 5) {
+                equipTool(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z);
+                bot.lookAt(new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z).offset(0.5, 0.5, 0.5), 100);
+                digBlock(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z);
+            }
+        } else if (bot.dunderTaskDetails.x != null || bot.dunderTaskDetails.y == null) {
+            bot.dunderTaskDetails.x = null;
+            if (bot.dunderTaskDetails.blocksList.length > 0) {
+                bot.dunderTaskDetails.x = bot.dunderTaskDetails.blocksList[0].x;
+                bot.dunderTaskDetails.y = bot.dunderTaskDetails.blocksList[0].y;
+                bot.dunderTaskDetails.z = bot.dunderTaskDetails.blocksList[0].z;
+                let lastI = 0;
+                for (var i = 0; i < bot.dunderTaskDetails.blocksList.length; i++) {
+                    if (dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z,
+                               bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z) >
+                        dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z,
+                               bot.dunderTaskDetails.blocksList[i].x, bot.dunderTaskDetails.blocksList[i].y, bot.dunderTaskDetails.blocksList[i].z) || blockExposed(bot, bot.blockAt(new Vec3(bot.dunderTaskDetails.blocksList[i].x, bot.dunderTaskDetails.blocksList[i].y, bot.dunderTaskDetails.blocksList[i].z))) && !blockExposed(bot, bot.blockAt(new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z))) ) {
+                       bot.dunderTaskDetails.x = bot.dunderTaskDetails.blocksList[i].x
+                       bot.dunderTaskDetails.y = bot.dunderTaskDetails.blocksList[i].y;
+                       bot.dunderTaskDetails.z = bot.dunderTaskDetails.blocksList[i].z;
+                       lastI = i;
+                    }
+                }
+                //console.log(bot.dunderTaskDetails.blocksList);
+                bot.dunderTaskDetails.blocksList.splice(lastI, 1);
+                //console.log(bot.dunderTaskDetails.blocksList);
+                dunderTaskLog("finished mining block, "  + bot.dunderTaskDetails.count + " left. Next: " + bot.dunderTaskDetails.x + ", " + bot.dunderTaskDetails.y + ", " + bot.dunderTaskDetails.z);
+            }
+        } else {
+            bot.dunderTaskDetails.itemsList = [];
+            for (var i in bot.entities) {
+                if (bot.entities[i].name == "item") {
+                    if (!bot.entities[i].excluded && blockSolid(bot, bot.entities[i].position.x, bot.entities[i].position.y-1.0, bot.entities[i].position.z) && bot.entities[i].metadata && bot.entities[i].metadata[8] && bot.entities[i].metadata[8].itemId && bot.dunderTaskDetails.itemCondition(bot.registry.items[bot.entities[i].metadata[8].itemId].name)) {
+                        //dunderTaskLog("item found " + bot.registry.items[bot.entities[i].metadata[8].itemId].name);
+                        bot.dunderTaskDetails.itemsList.push(bot.entities[i]);
+                    }
+                }
+            }
+
+            if (bot.dunderTaskDetails.itemsList.length > 0 && hasItemCount(bot, bot.dunderTaskDetails.options.itemCondition) < bot.dunderTaskDetails.itemTotal) {
+                bot.dunder.goal.x = Math.floor(bot.dunderTaskDetails.itemsList[0].position.x);
+                bot.dunder.goal.y = Math.floor(bot.dunderTaskDetails.itemsList[0].position.y);
+                bot.dunder.goal.z = Math.floor(bot.dunderTaskDetails.itemsList[0].position.z);
+                bot.dunder.goal.reached = false;
+                if (bot.dunder.movesToGo.length <= 1 && !bot.dunder.findingPath && (!bot.dunderTaskDetails.failedPathfind || bot.dunderTaskDetails.failedPathfind && (bot.dunderTaskDetails.failedPathfind.x != bot.dunder.goal.x || bot.dunderTaskDetails.failedPathfind.y != bot.dunder.goal.y || bot.dunderTaskDetails.failedPathfind.z != bot.dunder.goal.z))) {
+                    bot.dunder.pathGoalForgiveness = 1;
+                    findPath(bot, dunderBotPathfindDefaults, 500, Math.floor(bot.dunder.goal.x), Math.floor(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, false);
+                    console.log(bot.dunderTaskDetails.failedPathfind);
+                } else if (bot.dunderTaskDetails.failedPathfind && (bot.dunderTaskDetails.failedPathfind.x == bot.dunder.goal.x && bot.dunderTaskDetails.failedPathfind.y == bot.dunder.goal.y && bot.dunderTaskDetails.failedPathfind.z == bot.dunder.goal.z)) {
+                    bot.dunderTaskDetails.itemsList[0].excluded = true;
+                } else {
+                    //console.log("gimmie the item");
+                    strictFollow(bot);
+                }
+            } else {
+                if (hasItemCount(bot, bot.dunderTaskDetails.options.itemCondition) < bot.dunderTaskDetails.itemTotal) {
+                    bot.dunderTaskDetails.blocksList = findVein(bot, bot.dunderTaskDetails.options);
+                    bot.dunderTaskDetails.y = null;
+                    if (bot.dunderTaskDetails.blocksList.length > 0) {
+                        dunderTaskLog("found more! " + bot.dunderTaskDetails.blocksList);
+                    } else {
+                        dunderTaskLog("Could not find any nearby veins.");
+                        bot.dunderTaskCompleted = true;
+                    }
+                } else {
+                    dunderTaskLog("finished mining vein." + hasItemCount(bot, bot.dunderTaskDetails.itemCondition) + " " + bot.dunderTaskDetails.itemTotal);
+                    bot.dunderTaskCompleted = true;
+                }
+            }
+        }
+    } else if (bot.dunder.masterState == "miningOld") {
+        bot.dunder.state = "mining";
         //console.log("e");
-        if (bot.dunderTaskDetails.count > 0 && ( dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) > 5 || !bot.entity.onGround || !bot.dunderTaskDetails.failedPathfind && !visibleFromPos(bot, bot.entity.position, new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z)) && !(dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) <= 5 && bot.dunder.movesToGo.length <= 1 && bot.dunder.movesToGo[0] && visibleFromPos(bot, new Vec3(bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z), new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z))) )) {
+        if (blockSolid(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z) && (bot.dunderTaskDetails.count > 0 && ( dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) > 5 || !bot.entity.onGround || !bot.dunderTaskDetails.failedPathfind && !visibleFromPos(bot, bot.entity.position, new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z)) && !(dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) <= 5 && bot.dunder.movesToGo.length <= 1 && bot.dunder.movesToGo[0] && visibleFromPos(bot, new Vec3(bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z), new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z))) ))) {
             bot.dunder.goal.x = bot.dunderTaskDetails.x;
             bot.dunder.goal.y = bot.dunderTaskDetails.y;
             bot.dunder.goal.z = bot.dunderTaskDetails.z;
@@ -705,21 +806,41 @@ for (var i in bot.entities) {
                  }
             }
             strictFollow(bot);
+                            //console.log("gimmie the blocks");
         } else {
-            if (blockSolid(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z)) {
+            if (blockSolid(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z) && dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) <= 5) {
                 equipTool(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z);
                 bot.lookAt(new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z).offset(0.5, 0.5, 0.5), 100);
                 digBlock(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z);
             } else if (!bot.dunderTaskCompleted && bot.dunderTaskCurrent == "mining") {
-                bot.dunderTaskDetails.count--;
                 bot.dunderTaskDetails.failedPathfind = false;
                 if (bot.dunderTaskDetails.count > 0 && bot.dunderTaskDetails.blocksList.length <= 0) {
-                    bot.dunderTaskDetails.blocksList = bot.findBlocks({
-                        matching: bot.dunderTaskDetails.options.block,
-                        maxDistance: bot.dunderTaskDetails.options.distance,
-                        useExtraInfo: bot.dunderTaskDetails.options.useExtraInfo || false,
-                        count:1//(options.count) ? options.count : 1
-                    });
+                    bot.dunderTaskDetails.itemsList = [];
+                    for (var i in bot.entities) {
+                        if (bot.entities[i].name == "item") {
+                            if (blockSolid(bot, bot.entities[i].position.x, bot.entities[i].position.y-0.1, bot.entities[i].position.z) && bot.entities[i].metadata && bot.entities[i].metadata[8] && bot.entities[i].metadata[8].itemId && bot.dunderTaskDetails.itemCondition(bot.registry.items[bot.entities[i].metadata[8].itemId].name)) {
+                                //dunderTaskLog("item found " + bot.registry.items[bot.entities[i].metadata[8].itemId].name);
+                                bot.dunderTaskDetails.itemsList.push(bot.entities[i].position);
+                            }
+                        }
+                    }
+
+                    if (bot.dunderTaskDetails.itemsList.length > 0 && hasItemCount(bot, bot.dunderTaskDetails.options.itemCondition) < bot.dunderTaskDetails.itemTotal) {
+                        bot.dunder.goal.x = Math.floor(bot.dunderTaskDetails.itemsList[0].x);
+                        bot.dunder.goal.y = Math.floor(bot.dunderTaskDetails.itemsList[0].y);
+                        bot.dunder.goal.z = Math.floor(bot.dunderTaskDetails.itemsList[0].z);
+                        bot.dunder.goal.reached = false;
+                        if (bot.dunder.movesToGo.length <= 1 && !bot.dunder.findingPath) {
+                            bot.dunder.pathGoalForgiveness = 0;
+                            findPath(bot, dunderBotPathfindDefaults, 500, Math.floor(bot.dunder.goal.x), Math.floor(bot.dunder.goal.y), Math.floor(bot.dunder.goal.z), false, false, {mustBeVisible:true});
+                        } else {
+                            //console.log("gimmie the item");
+                            strictFollow(bot);
+                        }
+                    } else {
+                        bot.dunderTaskDetails.blocksList = findVein(bot, bot.dunderTaskDetails.options);
+                        dunderTaskLog("found more! " + bot.dunderTaskDetails.blocksList);
+                    }
                 }
 
                 if (bot.dunderTaskDetails.count > 0 && bot.dunderTaskDetails.blocksList.length > 0) {
@@ -732,20 +853,23 @@ for (var i in bot.entities) {
                                    bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z) >
                             dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z,
                                    bot.dunderTaskDetails.blocksList[i].x, bot.dunderTaskDetails.blocksList[i].y, bot.dunderTaskDetails.blocksList[i].z)) {
-                            bot.dunderTaskDetails = {blocksList:bot.dunderTaskDetails.blocksList, x:bot.dunderTaskDetails.blocksList[i].x, y:bot.dunderTaskDetails.blocksList[i].y, z:bot.dunderTaskDetails.blocksList[i].z, count:bot.dunderTaskDetails.count};
+                            bot.dunderTaskDetails.x = bot.dunderTaskDetails.blocksList[i].x
+                            bot.dunderTaskDetails.y = bot.dunderTaskDetails.blocksList[i].y;
+                            bot.dunderTaskDetails.z = bot.dunderTaskDetails.blocksList[i].z;
                             lastI = i;
                         }
                     }
-                    console.log(bot.dunderTaskDetails.blocksList);
+                    //console.log(bot.dunderTaskDetails.blocksList);
                     bot.dunderTaskDetails.blocksList.splice(lastI, 1);
-                    console.log(bot.dunderTaskDetails.blocksList);
-                    dunderTaskLog("finished mining block, "  + bot.dunderTaskDetails.count + " left.");
+                    //console.log(bot.dunderTaskDetails.blocksList);
+                    bot.dunderTaskDetails.count--;
+                    dunderTaskLog("finished mining block, "  + bot.dunderTaskDetails.count + " left. Next: " + bot.dunderTaskDetails.x + ", " + bot.dunderTaskDetails.y + ", " + bot.dunderTaskDetails.z);
                 } else {
                     if (bot.dunderTaskDetails.finishCondition == 0) {
                         dunderTaskLog("finished mining block, none left.");
                         bot.dunderTaskCompleted = true;
                     } else {
-                        if (hasItemCount(bot, bot.dunderTaskDetails.itemCondition) >= bot.dunderTaskDetails.itemTotal) {
+                        if (hasItemCount(bot, bot.dunderTaskDetails.options.itemCondition) >= bot.dunderTaskDetails.itemTotal) {
                             dunderTaskLog("finished collecting blocks, none left." + hasItemCount(bot, bot.dunderTaskDetails.itemCondition) + " " + bot.dunderTaskDetails.itemTotal);
                             bot.dunderTaskCompleted = true;
                         } else {

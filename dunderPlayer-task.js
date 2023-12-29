@@ -7,6 +7,14 @@ function createDunderTask(bot, taskType, options) {
     bot.dunderTasks.push([taskType, options]);
 };
 
+function veinExcluded(bot, block) {
+    console.log(bot.dunderTaskDetails.veinExcluders);
+    if (bot.dunderTaskDetails.veinExcluders[block.position.x + "_" + block.position.y + "_" + block.position.z]) {
+        return true;
+    }
+    return false;
+};
+
 function acceptDunderTask(bot, taskType, options) {
   let validTask = true;
   switch (taskType) {
@@ -74,21 +82,11 @@ function acceptDunderTask(bot, taskType, options) {
 
     case "mine":
         if (options.block) {
+                bot.dunderTaskDetails = {itemsList:[], blocksList:[], x:null, y:null, z:null, count:(options.count) ? options.count : 1, options:options, itemCondition:options.itemCondition, finishCondition:options.finishCondition, itemTotal:0, veinExcluders:{}};
+            options.useblock = options.block;
+            options.block = function(b) {return (options.useblock(b) && !veinExcluded(bot, b));}
             dunderTaskLog("Finding block to mine..."); 
-            var pathToBlocks = bot.findBlocks({
-                matching: options.block,
-                maxDistance: options.distance,
-                useExtraInfo: options.useExtraInfo || false,
-                count:1//(options.count) ? options.count : 1
-            });
-            
-            //vein stuff
-            /*if (pathToBlocks.length > 0) {
-                
-                let openMineNodes = [pathToBlocks[0]];
-                while (openMineNodes.length > 0) {
-                }
-            }*/
+            var pathToBlocks = findVein(bot, options);
 
             var pathToBlock = null;
             if (pathToBlocks.length > 0) {
@@ -109,12 +107,13 @@ function acceptDunderTask(bot, taskType, options) {
             }
 
             if (pathToBlock) {
-                bot.dunderTaskDetails = {itemsList:[], blocksList:pathToBlocks, x:pathToBlock.x, y:pathToBlock.y, z:pathToBlock.z, count:(options.count) ? options.count : 1, options:options, itemCondition:options.itemCondition, finishCondition:options.finishCondition, itemTotal:0};
+                bot.dunderTaskDetails = {itemsList:[], blocksList:pathToBlocks, x:pathToBlock.x, y:pathToBlock.y, z:pathToBlock.z, count:(options.count) ? options.count : 1, options:options, itemCondition:options.itemCondition, finishCondition:options.finishCondition, itemTotal:0, veinExcluders:{}};
                 if (bot.dunderTaskDetails.finishCondition != 0) {
                     bot.dunderTaskDetails.itemTotal = hasItemCount(bot, bot.dunderTaskDetails.itemCondition) + bot.dunderTaskDetails.count;
                 }
                 bot.dunder.masterState = "mining";
                 bot.dunderTaskCurrent = "mining";
+                console.log(pathToBlocks);
             }
         }
     break;

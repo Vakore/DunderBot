@@ -341,7 +341,7 @@ function strictFollow(bot) {
                     bot.dunder.botMove.sprint = false;
                     //bot.entity.velocity.x = 0;
                     //bot.entity.velocity.z = 0;
-                console.log("balancing mining by standing still");
+                //console.log("balancing mining by standing still");
                     var stayStill = attemptToStayStill(bot, bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5);
                      bot.dunder.botMove.forward = stayStill.forward;
                      bot.dunder.botMove.back = stayStill.back;
@@ -526,7 +526,7 @@ function strictFollow(bot) {
         } else {
             onPath = false;
             if (dist3d(bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5, bot.entity.position.x, bot.entity.position.y, bot.entity.position.z) < 2) {
-                console.log("balancing end of path by standing still");
+                //console.log("balancing end of path by standing still");
                 var stayStill = attemptToStayStill(bot, bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5);
                 bot.dunder.botMove.forward = stayStill.forward;
                 bot.dunder.botMove.back = stayStill.back;
@@ -696,7 +696,7 @@ function strictFollow(bot) {
 
 
 function attemptToStayStill(bot, x, y, z) {
-    console.log("stay still!");
+    //console.log("stay still!");
     var myStates = [
         new PlayerState(bot, {forward: true, back: false, left: false, right: false, jump: false,sprint: false,sneak: false,}),
         new PlayerState(bot, {forward: false, back: true, left: false, right: false, jump: false,sprint: false,sneak: false,}),

@@ -454,10 +454,14 @@ function visibleFromPos(bot, pos1, pos2) {
     //console.log(entity.position.offset(0, entity.height / 2, 0).minus(bot.entity.position.offset(0, 1.6, 0)).normalize());
     var theRaycast = bot.world.raycast(pos1.offset(0, 1.6, 0), pos2.offset(0.5, 0.5, 0.5).minus(pos1.offset(0, 1.6, 0)).normalize(), 16);
     var returner = false;
-    if (theRaycast && theRaycast.intersect &&
+    console.log(theRaycast.position + ", " + pos2);
+    if (theRaycast && theRaycast.intersect && /*theRaycast.position.x == pos2.x && theRaycast.position.y == pos2.y && theRaycast.position.z == pos2.z*/
         theRaycast.intersect.x >= pos2.x - 0.0 && theRaycast.intersect.x <= pos2.x + 1.0 &&
         theRaycast.intersect.y >= pos2.y - 0.0 && theRaycast.intersect.y <= pos2.y + 1.0 &&
-        theRaycast.intersect.z >= pos2.z - 0.0 && theRaycast.intersect.z <= pos2.z + 1.0
+        theRaycast.intersect.z >= pos2.z - 0.0 && theRaycast.intersect.z <= pos2.z + 1.0 /*&&
+        (theRaycast.intersect.x == pos2.x - 0.0 || theRaycast.intersect.x == pos2.x + 1.0) +
+        (theRaycast.intersect.x == pos2.x - 0.0 || theRaycast.intersect.x == pos2.x + 1.0) +
+        (theRaycast.intersect.x == pos2.x - 0.0 || theRaycast.intersect.x == pos2.x + 1.0) < 2*/
       /*dist3d(pos1.x, pos1.y, pos1.z, theRaycast.intersect.x, theRaycast.intersect.y, theRaycast.intersect.z) <
         dist3d(pos1.x, pos1.y, pos1.z, pos2.x, pos2.y, pos2.z) - 0.5*/) {
         returner = true;
@@ -587,6 +591,79 @@ function placeCraftingTable(bot) {
                 console.log("epic embed fail");
             }
 };
+
+
+
+
+function findVein(bot, options) {
+            var pathToBlocks = bot.findBlocks({
+                matching: options.block,
+                maxDistance: options.distance,
+                useExtraInfo: options.useExtraInfo || false,
+                count:1//(options.count) ? options.count : 1
+            });
+            
+            //vein stuff
+            if (pathToBlocks.length > 0) {
+                let maxSpreadCount = 20;
+                let openMineNodes = 1;
+                let mineNodes = [[pathToBlocks[0], true]];
+                for (var i = 0; i < mineNodes.length && i < maxSpreadCount; i++) {
+                    if (mineNodes[i][1]) {
+                        mineNodes[i][1] = false;
+                        let validPushers = [true, true, true, true, true, true];
+                        for (var j = 0; j < mineNodes.length; j++) {
+                            if (mineNodes[j][0].x == mineNodes[i][0].x-1 && mineNodes[j][0].z == mineNodes[i][0].z && mineNodes[j][0].y == mineNodes[i][0].y) {
+                                validPushers[0] = false;
+                            }
+                            if (mineNodes[j][0].x == mineNodes[i][0].x+1 && mineNodes[j][0].z == mineNodes[i][0].z && mineNodes[j][0].y == mineNodes[i][0].y) {
+                                validPushers[1] = false;
+                            }
+                            if (mineNodes[j][0].x == mineNodes[i][0].x && mineNodes[j][0].z == mineNodes[i][0].z-1 && mineNodes[j][0].y == mineNodes[i][0].y) {
+                                validPushers[2] = false;
+                            }
+                            if (mineNodes[j][0].x == mineNodes[i][0].x && mineNodes[j][0].z == mineNodes[i][0].z+1 && mineNodes[j][0].y == mineNodes[i][0].y) {
+                                validPushers[3] = false;
+                            }
+                            if (mineNodes[j][0].x == mineNodes[i][0].x && mineNodes[j][0].z == mineNodes[i][0].z && mineNodes[j][0].y == mineNodes[i][0].y-1) {
+                                validPushers[4] = false;
+                            }
+                            if (mineNodes[j][0].x == mineNodes[i][0].x && mineNodes[j][0].z == mineNodes[i][0].z && mineNodes[j][0].y == mineNodes[i][0].y+1) {
+                                validPushers[5] = false;
+                            }
+                        }
+
+                        if (validPushers[0] && options.block( bot.blockAt( mineNodes[i][0].offset(-1, 0, 0) ) )) {
+                            mineNodes.push([bot.blockAt( mineNodes[i][0].offset(-1, 0, 0) ).position, true]);
+                        }
+                        if (validPushers[1] && options.block( bot.blockAt( mineNodes[i][0].offset(1, 0, 0) ) )) {
+                            mineNodes.push([bot.blockAt( mineNodes[i][0].offset(1, 0, 0) ).position, true]);
+                        }
+                        if (validPushers[2] && options.block( bot.blockAt( mineNodes[i][0].offset(0, 0, -1) ) )) {
+                            mineNodes.push([bot.blockAt( mineNodes[i][0].offset(0, 0, -1) ).position, true]);
+                        }
+                        if (validPushers[3] && options.block( bot.blockAt( mineNodes[i][0].offset(0, 0, 1) ) )) {
+                            mineNodes.push([bot.blockAt( mineNodes[i][0].offset(0, 0, 1) ).position, true]);
+                        }
+                        if (validPushers[4] && options.block( bot.blockAt( mineNodes[i][0].offset(0, -1, 0) ) )) {
+                            mineNodes.push([bot.blockAt( mineNodes[i][0].offset(0, -1, 0) ).position, true]);
+                        }
+                        if (validPushers[5] && options.block( bot.blockAt( mineNodes[i][0].offset(0, 1, 0) ) )) {
+                            mineNodes.push([bot.blockAt( mineNodes[i][0].offset(0, 1, 0) ).position, true]);
+                        }
+                    }
+                }
+
+                for (var i = 1; i < mineNodes.length; i++) {
+                    pathToBlocks.push(mineNodes[i][0]);
+                }
+                //while (openMineNodes > 0 && maxSpreadCount > 0) {
+                //    maxSpreadCount--;  
+                //}
+            }
+            return pathToBlocks;
+};
+
 
 //Math
 

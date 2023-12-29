@@ -1355,7 +1355,7 @@ var doFindingPath = function(bot, objStuff, extension, correction, endX, endY, e
                //console.log("Did not find full path quickly, taking the best known one known so far...");
 
                console.log("Did not find full path quickly");
-               bot.dunderTaskDetails.failedPathfind = true;
+               bot.dunderTaskDetails.failedPathfind = {x:endX, y:endY, z:endZ};
                bot.dunder[objStuff.movesToGo] = [];
 
                console.log(bot.dunder.goal);
