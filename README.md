@@ -7,12 +7,14 @@ A minecraft bot I am working on. It is not that smart at the moment, and breaks 
 
 Type 'goto (player)', 'goto (x) (y) (z)', or 'goto (x) (z)' to enter pathfinding mode and go to those coordinates
 Type 'e' to enter generic mode.
+Type 'repeatTasks' to execute tasks specified in dunderPlayer-index.js
+Run 'dunderPlayer-main' to execute this. This is not meant to be in a usable state as of now.
 
 Go to dunderPlayer-main and edit the settings on the top to run the program.
 
 To show pathfinding debug particles go to line 128 of dunderPlayer-main and change 'chatParticles' to true, make sure cheats are on. To turn these off set it to false. Currently on by default.
 
-Version - Alpha 8/10/2023
+Version - Alpha 12/30/2023
 
 NOTE: Not all of these files are necessary to run the bot(the 'backup' and 'old' files), as these are backups for myself.
 
