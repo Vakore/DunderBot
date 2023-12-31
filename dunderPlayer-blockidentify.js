@@ -242,3 +242,18 @@ function blockLava(bot, x, y, z) {
     }
     return isTitle;
 };
+
+
+function blockExposed(bot, block) {
+    var returner = true;
+    if (
+        bot.blockAt(block.position.offset(-1, 0, 0)) && bot.blockAt(block.position.offset(-1, 0, 0)).shapes.length > 0 &&
+        bot.blockAt(block.position.offset(1, 0, 0)) && bot.blockAt(block.position.offset(1, 0, 0)).shapes.length > 0 &&
+        bot.blockAt(block.position.offset(0, -1, 0)) && bot.blockAt(block.position.offset(0, -1, 0)).shapes.length > 0 &&
+        bot.blockAt(block.position.offset(0, 1, 0)) && bot.blockAt(block.position.offset(0, 1, 0)).shapes.length > 0 &&
+        bot.blockAt(block.position.offset(0, 0, -1)) && bot.blockAt(block.position.offset(0, 0, -1)).shapes.length > 0 &&
+        bot.blockAt(block.position.offset(0, 0, 1)) && bot.blockAt(block.position.offset(0, 0, 1)).shapes.length > 0) {
+        returner = false;
+    }
+    return returner;
+};
