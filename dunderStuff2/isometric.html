@@ -1,0 +1,377 @@
+<html>
+<title>DunderBot Isometric Viewer</title>
+<h1>DunderBot Isometric Viewer</h1>
+<h2 id = "inventoryContext"></h2>
+<canvas width = "910" height = "512" id = "canvas"></canvas>
+<p id = "p"></p>
+    
+<script>
+    var colors = [
+        [255, 255, 255, 1],
+        [0, 255, 0, 1],
+        [150, 0, 0, 1],
+        [0, 0, 255, 1.0],
+        [0, 155, 0, 1],
+        [255, 150, 0, 1.0],
+    ];
+    var minY = -64;minY = 0;
+    var maxY = 320;maxY = 32;
+    var can = document.getElementById("canvas").getContext("2d");
+    function rect(x, y, w, h) {
+        can.fillRect(x, y, w, h);
+    };
+    function triangle(x1, y1, x2, y2, x3, y3) {
+        can.beginPath();
+        can.moveTo(x1, y1);
+        can.lineTo(x2, y2);
+        can.lineTo(x3, y3);
+        can.closePath();
+        can.fill();
+    };
+    function quad(can, x1, y1, x2, y2, x3, y3, x4, y4) {
+        can.beginPath();
+        can.moveTo(x1, y1);
+        can.lineTo(x2, y2);
+        can.lineTo(x3, y3);
+        can.lineTo(x4, y4);
+        can.closePath();
+        can.fill();
+    };
+    function fill(r, g, b, a) {
+        if (a === undefined) {
+            a = 1;
+        }
+        can.fillStyle = "rgba(" + r + ", " + g + ", " + b + ", " + a + ")";
+    };
+    function canFill(can, r, g, b, a) {
+        if (a === undefined) {
+            a = 1;
+        }
+        can.fillStyle = "rgba(" + r + ", " + g + ", " + b + ", " + a + ")";
+    };
+    fill(0, 0, 0);
+    rect(0, 0, 910, 512);
+    
+    function chunk(x, y, z, data) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.canvas = document.createElement("canvas");
+        this.canvas.width = s * 32;
+        this.canvas.height = s * 4 * 16;
+        this.can = this.canvas.getContext("2d");
+        document.getElementById("p").appendChild(this.canvas);
+        //this.can.fillStyle = "rgb(255, 0, 0)";
+        //this.can.fillRect(0, 0, s * 2 * 16, s * 2 * 16);
+        
+        this.newData = [];
+        if (!data) {
+            data = [];
+            for (var i = 0; i < 16; i++) {
+                data.push([]);
+                this.newData.push([]);
+                for (var j = 0; j < 16; j++) {
+                    data[i].push([]);
+                    this.newData[i].push([]);
+                    for (var k = 0; k < 16; k++) {
+                        if ((j + this.y * 16) != maxY-1 && (
+                            //j < (4 - z) * 10 ||
+                            Math.abs(Math.sin((i + this.x * 16)/40))*25*(1+Math.cos((k + this.z * 16)/20)) +
+                            Math.abs(Math.cos((k + this.z * 16)/40))*25*(1+Math.sin((k + this.z * 16)/20)) > j + this.y * 16 
+                        )) {
+                            if (j + this.y * 16 < 36) {
+                                data[i][j].push(5);
+                            } else {
+                                data[i][j].push(1);
+                            }
+                        } else if (j + this.y * 16 < 32) {
+                            data[i][j].push(3);
+                        } else{
+                            data[i][j].push(0);
+                        }
+                        this.newData[i][j].push(data[i][j][k]);
+                    }
+                }
+            }
+        }
+        this.data = data;
+    };
+    var s = 3;
+    var s2 = 3;
+    function getBlock(x, y, z) {
+        var chunk = null;
+        for (var i = 0; i < chunks.length; i++) {
+            if (chunks[i].x == Math.floor(x / 16) &&
+                chunks[i].y == Math.floor(y / 16) &&
+                chunks[i].z == Math.floor(z / 16)) {
+                chunk = chunks[i];
+                i = chunks.length;
+            }
+        }
+        if (!chunk) {return 1;}
+        var block = chunk.data[x % 16][y % 16][z % 16];
+        //if (block == 3) {block = 0;}
+        return block;
+    };
+    
+    function setBlock(x, y, z, d, updateChunk) {
+        var chunk = null;
+        for (var i = 0; i < chunks.length; i++) {
+            if (chunks[i].x == Math.floor(x / 16) &&
+                chunks[i].y == Math.floor(y / 16) &&
+                chunks[i].z == Math.floor(z / 16)) {
+                chunk = chunks[i];
+                i = chunks.length;
+            }
+        }
+        if (!chunk) {return 1;}
+        chunk.data[x % 16][y % 16][z % 16] = d;
+        if (updateChunk) {
+            chunk.render();
+        }
+    };
+
+    chunk.prototype.doCellStuff = function() {
+        for (var i = 0; i < 16; i++) {
+            for (var j = 0; j < 16; j++) {
+                for (var k = 0; k < 16; k++) {
+                    this.newData[i][j][k] = this.data[i][j][k];
+                    if (this.data[i][j][k] != 0) {
+                        var neighborCount =
+                            (getBlock(this.x * 16 + i, this.y * 16 + j, this.z * 16 + k + 1) != 0)+
+                            (getBlock(this.x * 16 + i, this.y * 16 + j, this.z * 16 + k - 1) != 0)+
+                            (getBlock(this.x * 16 + i + 1, this.y * 16 + j, this.z * 16 + k) != 0)+
+                            (getBlock(this.x * 16 + i - 1, this.y * 16 + j, this.z * 16 + k) != 0)+
+                            (getBlock(this.x * 16 + i, this.y * 16 + j + 1, this.z * 16 + k) != 0)+
+                            (getBlock(this.x * 16 + i, this.y * 16 + j - 1, this.z * 16 + k) != 0);
+                        if (neighborCount < 3) {
+                            this.newData[i][j][k] = 0;
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    chunk.prototype.updateCellStuff = function() {
+        for (var i = 0; i < 16; i++) {
+            for (var j = 0; j < 16; j++) {
+                for (var k = 0; k < 16; k++) {
+                    this.data[i][j][k] = this.newData[i][j][k];
+                }
+            }
+        }
+    };
+    
+    chunk.prototype.render = function() {
+        this.can.clearRect(0, 0, s * 32, s * 64);
+        //for (var j = 0; j < minY + maxY; j++) {
+        for (var i = 0; i < 16; i++) {
+            for (var k = 0; k < 16; k++) {
+                for (var j = 0; j < 16; j++) {
+                    if (this.data[i][j][k] != 0
+                        /*(i + 1 < 16 && this.data[i+1][j][k] != 1 ||
+                         j + 1 < minY + maxY && this.data[i][j + 1][k] != 1 ||
+                         k + 1 < 16 && this.data[i][j][k+1] != 1 )*/) {
+                        var x = 16 + i - k;
+                        var y = (8-j);/*minY + maxY - (j + this.y * 16)*/;//(minY + maxY - j);
+                        var z = 16 + i + k;
+                        //x += this.x * 16 - this.z * 16;
+                        //z += this.x * 16 + this.z * 16;
+                        if (getBlock(this.x * 16 + i, this.y * 16 + j + 1, this.z * 16 + k) == 0) {
+                            canFill(this.can, colors[this.data[i][j][k]][0], colors[this.data[i][j][k]][1], colors[this.data[i][j][k]][2], colors[this.data[i][j][k]][3]);
+                            quad(this.can, (x)*s, (z + y)*s, (x + 1)*s, (z + y + 1)*s, (x)*s, (z + y + 2)*s, (x - 1) * s, (z + y + 1) * s);
+                        }
+                        
+                        if (getBlock(this.x * 16 + i, this.y * 16 + j, this.z * 16 + k + 1) == 0) {
+                            canFill(this.can, colors[this.data[i][j][k]][0] * 0.3, colors[this.data[i][j][k]][1] * 0.3, colors[this.data[i][j][k]][2] * 0.3, colors[this.data[i][j][k]][3]);
+                            quad(this.can, (x-1)*s, (z + y+1)*s, (x)*s, (z + y + 2)*s, (x)*s, (z + y + 3)*s, (x - 1) * s, (z + y + 2) * s);
+                        }
+                        
+                        if (getBlock(this.x * 16 + i + 1, this.y * 16 + j, this.z * 16 + k) == 0) {
+                            canFill(this.can, colors[this.data[i][j][k]][0] * 0.5, colors[this.data[i][j][k]][1] * 0.5, colors[this.data[i][j][k]][2] * 0.5, colors[this.data[i][j][k]][3]);
+                            quad(this.can, (x)*s, (z + y+2)*s, (x+1)*s, (z + y + 1)*s, (x+1)*s, (z + y + 2)*s, (x) * s, (z + y + 3) * s);
+                        }
+                    }
+                }
+            }
+        }
+    };
+    
+    chunk.prototype.draw = function() {
+        //canFill(this.can, 255, 0, 0);
+        //this.can.fillRect(0, 0, 20, 20);
+        //rect(this.x * 16 * s, (this.z + this.y) * 16 * s, 16 * s, 16 * s);
+        if (
+            /*-scrollX+128 >= (this.x - this.z) * 16 * s && -scrollX+128 <= (this.x - this.z + 2) * 16 * s &&
+            -scrollZ+128 >= (this.x + this.z) * 16 * s && -scrollZ+128 <= (this.x + this.z + 2) * 16 * s*/
+        -scrollX >= this.x * 16 * s - 256 && -scrollX <= (this.x + 1) * 16 * s &&
+        -scrollZ >= this.z * 16 * s - 128 && -scrollZ <= (this.z + 1) * 16 * s + 64) {
+            onChunk = true;
+        } else {
+            return;
+        }
+        can.drawImage(this.canvas, (this.x - this.z) * 16 * s * s2, (this.x + this.z - this.y) * 16 * s * s2, s * s2 * 32, s * s2 * 4 * 16);
+    };
+    
+    chunk.prototype.addTrees = function() {
+        for (var i = 0; i < 16; i++) {
+            for (var j = 15; j >= 0; j--) {
+                for (var k = 0; k < 16; k++) {
+                    if (Math.random() > 0.99 && this.data[i][j][k] == 1 && getBlock(this.x * 16 + i, this.y * 16 + j + 1, this.z * 16 + k) == 0) {
+                        setBlock(this.x * 16 + i, this.y * 16 + j+4, this.z * 16 + k, 2);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+1, this.z * 16 + k, 2);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+2, this.z * 16 + k, 2);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+3, this.z * 16 + k, 2);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+5, this.z * 16 + k, 2);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+6, this.z * 16 + k, 2);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+7, this.z * 16 + k, 2);
+                        
+                        setBlock(this.x * 16 + i, this.y * 16 + j+8, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+9, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i-1, this.y * 16 + j+8, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i-1, this.y * 16 + j+9, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i+1, this.y * 16 + j+8, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i+1, this.y * 16 + j+9, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+8, this.z * 16 + k-1, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+9, this.z * 16 + k-1, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+8, this.z * 16 + k+1, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+9, this.z * 16 + k+1, 4);
+                        
+                        for (var o = -3; o < 3; o++) {   
+                            for (var p = -3; p < 3; p++) {
+                                setBlock(this.x * 16 + i + o, this.y * 16 + j+6, this.z * 16 + k + p, 4);
+                                setBlock(this.x * 16 + i + o, this.y * 16 + j+7, this.z * 16 + k + p, 4);
+                            }
+                        }
+                        /*setBlock(this.x * 16 + i, this.y * 16 + j+6, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+7, this.z * 16 + k, 4);
+                        
+                        setBlock(this.x * 16 + i-1, this.y * 16 + j+6, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i-1, this.y * 16 + j+7, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i-2, this.y * 16 + j+6, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i-2, this.y * 16 + j+7, this.z * 16 + k, 4);
+                        
+                        setBlock(this.x * 16 + i+1, this.y * 16 + j+6, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i+1, this.y * 16 + j+7, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i+2, this.y * 16 + j+6, this.z * 16 + k, 4);
+                        setBlock(this.x * 16 + i+2, this.y * 16 + j+7, this.z * 16 + k, 4);
+                        
+                        setBlock(this.x * 16 + i, this.y * 16 + j+6, this.z * 16 + k-1, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+7, this.z * 16 + k-1, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+6, this.z * 16 + k-2, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+7, this.z * 16 + k-2, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+6, this.z * 16 + k+1, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+7, this.z * 16 + k+1, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+6, this.z * 16 + k+2, 4);
+                        setBlock(this.x * 16 + i, this.y * 16 + j+7, this.z * 16 + k+2, 4);
+                        
+                        
+                        setBlock(this.x * 16 + i+1, this.y * 16 + j+6, this.z * 16 + k-1, 4);
+                        setBlock(this.x * 16 + i+1, this.y * 16 + j+7, this.z * 16 + k+1, 4);
+                        setBlock(this.x * 16 + i-1, this.y * 16 + j+6, this.z * 16 + k-1, 4);
+                        setBlock(this.x * 16 + i-1, this.y * 16 + j+7, this.z * 16 + k+1, 4);*/
+                    }
+                }
+            }
+        }
+    };
+    
+    var chunks = [];
+    for (var i = 0; i < 7; i++) {
+        for (var j = 1; j < 6; j++) {
+            for (var k = 0; k < 7; k++) {
+                chunks.push(new chunk(i, j, k));
+            }
+        }
+    }
+    
+    for (var i = 0; i < chunks.length; i++) {
+        chunks[i].addTrees();
+    }
+
+
+  /*for (var k = 0; k < 1; k++) {
+    for (var i = 0; i < chunks.length; i++) {
+        chunks[i].doCellStuff();
+    }
+    
+    for (var i = 0; i < chunks.length; i++) {
+        chunks[i].updateCellStuff();
+    }
+  }*/
+    
+    for (var i = 0; i < chunks.length; i++) {
+        chunks[i].render();
+    }
+    
+    
+var keys = [];
+var keysDown = [];
+document.addEventListener("keydown",function(e) {
+    e.preventDefault();
+    if (!keys[e.keyCode]) {
+        keysDown[e.keyCode] = true;
+    } else {
+        keysDown[e.keyCode] = false;
+    }
+    keys[e.keyCode] = true;
+});
+
+document.addEventListener("keyup",function(e) {
+    e.preventDefault();
+    keysDown[e.keyCode] = false;
+    keys[e.keyCode] = false;
+});
+    var scrollX = 0;
+    var scrollZ = 0;
+    can.imageSmoothingEnabled = false;
+    function run() {
+        fill(0, 0, 0);
+        rect(0, 0, 910, 512);
+        can.save();
+        //can.translate(scrollX*s2, scrollZ*s2);
+        can.translate((scrollX - scrollZ) * s2, (scrollX + scrollZ) * s2);
+        if (keys[65]) {scrollX += s;}
+        if (keys[68]) {scrollX -= s;}
+        if (keys[87]) {scrollZ += s;}
+        if (keys[83]) {scrollZ -= s;}
+        
+        /*if (keysDown[90]) {
+            scrollX *= 4;
+            scrollY *= 4;
+            s2 *= 2;
+        }*/
+        
+        for (var i = 0; i < chunks.length; i++) {
+            chunks[i].draw();
+        }
+        //fill(255, 0, 0);
+        //rect(Math.floor(-scrollX) * s + 128, Math.floor(-scrollZ) * s + 64, 2 * s, 2 * s)
+        can.restore();
+        keysDown = [];
+        if (Math.random() > 0.2) {
+            //setBlock(Math.floor(Math.random() * 64), Math.floor(Math.random() * 32), Math.floor(Math.random() * 64), 2, true);
+        }
+        var onChunk = false;
+        for (var i = 0; i < chunks.length; i++) {
+            if (-scrollX+64 >= chunks[i].x * 16*s2 && -scrollX+64 <= (chunks[i].x * 16 + 16)*s2 &&
+                -scrollZ+64 >= chunks[i].z * 16*s2 && -scrollZ+64 <= (chunks[i].z * 16 + 16)*s2) {
+                onChunk = true;
+            }
+        }
+        /*if (!onChunk) {
+            fill(255, 0, 0, 0.5);
+            rect(0, 0, 455, 256);
+            //alert("e");
+            for (var i = 0; i < 4; i++) {
+                chunks.push(new chunk(Math.round(-scrollX / 16 / s2)-4, i, Math.round(-scrollZ / 16 / s2))-4);
+                chunks[chunks.length - 1].render();
+            }
+        }*/
+        requestAnimationFrame(run);
+    };
+    run();
+    //alert("e");
+</script>
+</html>

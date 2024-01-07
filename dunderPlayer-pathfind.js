@@ -37,14 +37,19 @@ function isSwim(swimme) {
 //var lastPos = {"currentMove":0,x:0,y:0,z:0};
 
 function addNode(bot, objStuff, parent, fcost, hcost, x, y, z, moveType, brokenBlocks, brokeBlocks, placedBlocks, blockActions) {
-    var parentFCost = fcost;
+    var parentFCost = fcost / ((bot.dunder.attempts > 1000) ? (bot.dunder.attempts / 1000) : 1);
     if (parent) {
         parentFCost += parent.fCost;
-    }
+    }//(!!!) made change, see parentFCost / number below
     pushHeap(bot, objStuff, {"parent":parent, "fCost":parentFCost, "hCost":hcost, "x":x, "y":y, "z":z, "open":true, "moveType":moveType, "brokenBlocks":brokenBlocks, "brokeBlocks":brokeBlocks, "blockActions":blockActions});
-    if (bot.dunder[objStuff.nodes3d][y] == undefined) {bot.dunder[objStuff.nodes3d][y] = [];}
-    if (bot.dunder[objStuff.nodes3d][y][z] == undefined) {bot.dunder[objStuff.nodes3d][y][z] = [];}
-    bot.dunder[objStuff.nodes3d][y][z][x] = bot.dunder[objStuff.nodes][bot.dunder[objStuff.nodes].length - 1];
+
+    //old 3d array
+    //if (bot.dunder[objStuff.nodes3d][y] == undefined) {bot.dunder[objStuff.nodes3d][y] = [];}
+    //if (bot.dunder[objStuff.nodes3d][y][z] == undefined) {bot.dunder[objStuff.nodes3d][y][z] = [];}
+    //bot.dunder[objStuff.nodes3d][y][z][x] = bot.dunder[objStuff.nodes][bot.dunder[objStuff.nodes].length - 1];
+    //new object thing
+    bot.dunder[objStuff.nodes3d][y + "," + z + "," + x] = bot.dunder[objStuff.nodes][bot.dunder[objStuff.nodes].length - 1];
+
 };
 
 
@@ -1031,9 +1036,9 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
     } else {
         distToGoal = dist3d(x, 0, z, endX, 0, endY) * (25);
     }
-    if (bot.dunder[objStuff.nodes3d][y] == undefined || bot.dunder[objStuff.nodes3d][y][z] == undefined || bot.dunder[objStuff.nodes3d][y][z][x] == undefined) {
+    if (/*bot.dunder[objStuff.nodes3d][y] == undefined || bot.dunder[objStuff.nodes3d][y][z] == undefined || bot.dunder[objStuff.nodes3d][y][z][x] == undefined*/!bot.dunder[objStuff.nodes3d][y + "," + z + "," + x]) {
         ownerNodeUndefined = true;
-    } else if (node.fCost + myFCost + distToGoal < bot.dunder[objStuff.nodes3d][y][z][x].fCost + bot.dunder[objStuff.nodes3d][y][z][x].hCost) {
+    } else if (node.fCost + myFCost + distToGoal < bot.dunder[objStuff.nodes3d][y + "," + z + "," + x].fCost + bot.dunder[objStuff.nodes3d][y + "," + z + "," + x].hCost) {
         ownerNodeUndefined = true;
     }
     if (legalMove && ownerNodeUndefined) {
@@ -1047,7 +1052,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
 //movesToGo = [];
 
 //var bestNodeIndex = 0;
-function findPath(bot, objStuff, maxAttemptCount, endX, endY, endZ, correction, extension) {
+function findPath(bot, objStuff, maxAttemptCount, endX, endY, endZ, correction, extension, extraOptions) {
     bot.dunder.pathfinderOptions.canClutch = hasItem(bot, ["water_bucket"]);
     bot.dunder.lastPosOnPath = true;
     console.log(bot.dunder.cbtm + " is looking for a path... correction, extension, maxAttemptCount: " + correction + ", " + extension + ", " + maxAttemptCount);
@@ -1074,12 +1079,12 @@ function findPath(bot, objStuff, maxAttemptCount, endX, endY, endZ, correction, 
     }
     if (!correction && !extension) {
         bot.dunder[objStuff.nodes] = [];
-        bot.dunder[objStuff.nodes3d] = [];
+        bot.dunder[objStuff.nodes3d] = {};
         bot.dunder[objStuff.openNodes] = [];
         bot.dunder[objStuff.movesToGo] = [];
     } else if (correction) {
         bot.dunder[objStuff.nodes] = [];
-        bot.dunder[objStuff.nodes3d] = [];
+        bot.dunder[objStuff.nodes3d] = {};
         bot.dunder[objStuff.openNodes] = [];
         var bestOne = [0, 10000];
         for (var i = 0; i < bot.dunder[objStuff.movesToGo].length; i++) {
@@ -1087,18 +1092,25 @@ function findPath(bot, objStuff, maxAttemptCount, endX, endY, endZ, correction, 
                 bestOne = [i, dist3d(bot.dunder[objStuff.movesToGo][i].x, bot.dunder[objStuff.movesToGo][i].y, bot.dunder[objStuff.movesToGo][i].z, Math.round(bot.entity.position.x), Math.floor(bot.entity.position.y), Math.round(bot.entity.position.z))];
             }
         }
+
+        //(!!!)
+        bestOne[0] -= 5;
+        if (bestOne[0] < 0) {bestOne[0] = 0;} 
+        //(!!!)
+
         if (bestOne[0] + 1 < bot.dunder[objStuff.movesToGo].length) {
             bot.dunder[objStuff.movesToGo].splice(bestOne[0] + 1, bot.dunder[objStuff.movesToGo].length);
         }
         endX = bot.dunder[objStuff.movesToGo][bestOne[0]].x;
         endY = bot.dunder[objStuff.movesToGo][bestOne[0]].y;
         endZ = bot.dunder[objStuff.movesToGo][bestOne[0]].z;
+        if (bestOne[0] == 0) {bot.dunder[objStuff.movesToGo] = [];}//(!!!)
         //console.log("endPos: " + bot.dunder[objStuff.movesToGo][bestOne[0]]);
     } else if (extension) {
         //if (bot.dunder[objStuff.maxAttempts] == 500) {
             bot.dunder[objStuff.nodes] = [];
             bot.dunder[objStuff.openNodes] = [];
-            bot.dunder[objStuff.nodes3d] = [];
+            bot.dunder[objStuff.nodes3d] = {};
         //}
         var bestOne = [0, 100000];
         for (var i = 0; i < bot.dunder[objStuff.movesToGo].length; i++) {
@@ -1122,7 +1134,7 @@ function findPath(bot, objStuff, maxAttemptCount, endX, endY, endZ, correction, 
      } /*else if (extension) {
         bot.dunder[objStuff.nodes] = [];
         bot.dunder[objStuff.openNodes] = [];
-        bot.dunder[objStuff.nodes3d] = [];
+        bot.dunder[objStuff.nodes3d] = {};
         var bestOne = [0, 10000];
         for (var i = 0; i < bot.dunder[objStuff.movesToGo].length; i++) {
             if (dist3d(bot.dunder[objStuff.movesToGo][i].x, bot.dunder[objStuff.movesToGo][i].y, bot.dunder[objStuff.movesToGo][i].z, endX, endY, endZ) < bestOne[1]) {
@@ -1172,17 +1184,18 @@ function findPath(bot, objStuff, maxAttemptCount, endX, endY, endZ, correction, 
     //console.log(bot.dunder.findingPath);
     if (bot.dunder.findingPath) {
         clearInterval(bot.dunder.findingPath);
+        bot.dunder.findingPath = null;
     }
 
     if (objStuff.attempts == "attempts") {
-        bot.dunder.findingPath = setInterval(function() {doFindingPath(bot, objStuff, extension, correction, endX, endY, endZ, maxAttempts);}, 50);
+        bot.dunder.findingPath = setInterval(function() {doFindingPath(bot, objStuff, extension, correction, endX, endY, endZ, maxAttempts, extraOptions);}, 50);
     } else {
-        return doFindingPath(bot, objStuff, extension, correction, endX, endY, endZ, maxAttempts);
+        return doFindingPath(bot, objStuff, extension, correction, endX, endY, endZ, maxAttempts, extraOptions);
     }
 };
 
 
-var doFindingPath = function(bot, objStuff, extension, correction, endX, endY, endZ, maxAttempts) {
+var doFindingPath = function(bot, objStuff, extension, correction, endX, endY, endZ, maxAttempts, extraOptions) {
         //console.log(bot.dunder.cbtm + " is the bot's ID");
         bot.dunder[objStuff.bestNodeIndex] = 0;
         //console.log("searching...");
@@ -1229,8 +1242,8 @@ var doFindingPath = function(bot, objStuff, extension, correction, endX, endY, e
                     chunkAvailible = true;
                 }
             }
-            if (bot.dunder[objStuff.bestNode] && (bot.dunder[objStuff.attempts] > bot.dunder[objStuff.maxAttempts] /*&& dist3d(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].y, bot.dunder[objStuff.bestNode].z, bot.dunder.goal.x, bot.dunder.goal.y, bot.dunder.goal.z) < dist3d(bot.dunder.lastPos.x, bot.dunder.lastPos.y, bot.dunder.lastPos.z, bot.dunder.goal.x, bot.dunder.goal.y, bot.dunder.goal.z)*/ || endZ != undefined && bot.dunder[objStuff.bestNode].x == endX && bot.dunder[objStuff.bestNode].y == endY && bot.dunder[objStuff.bestNode].z == endZ /*dist3d(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].y, bot.dunder[objStuff.bestNode].z, endX, endY, endZ) < 3*/ ||
-                endZ == undefined && bot.dunder[objStuff.bestNode].x == endX && bot.dunder[objStuff.bestNode].z == endY /*dist3d(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].z, 0, endX, endY, 0) < 3*/ || !chunkAvailible)) {
+            if (bot.dunder[objStuff.bestNode] && (bot.dunder[objStuff.attempts] > bot.dunder[objStuff.maxAttempts] /*&& dist3d(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].y, bot.dunder[objStuff.bestNode].z, bot.dunder.goal.x, bot.dunder.goal.y, bot.dunder.goal.z) < dist3d(bot.dunder.lastPos.x, bot.dunder.lastPos.y, bot.dunder.lastPos.z, bot.dunder.goal.x, bot.dunder.goal.y, bot.dunder.goal.z)*/ || endZ != undefined && /*bot.dunder[objStuff.bestNode].x == endX && bot.dunder[objStuff.bestNode].y == endY && bot.dunder[objStuff.bestNode].z == endZ*/ distMan3d(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].y, bot.dunder[objStuff.bestNode].z, endX, endY, endZ) <= bot.dunder.pathGoalForgiveness && (!extraOptions || extraOptions && !extraOptions.mustBeVisible || extraOptions && extraOptions.mustBeVisible && visibleFromPos(bot, new Vec3(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].y, bot.dunder[objStuff.bestNode].z), new Vec3 (endX, endY, endZ), bot.dunder[objStuff.bestNode])) ||
+                endZ == undefined && bot.dunder[objStuff.bestNode].x == endX && bot.dunder[objStuff.bestNode].z == endY /*dist3d(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].z, 0, endX, endY, 0) <= bot.dunder.pathGoalForgiveness*/ || !chunkAvailible)) {
                 botPathfindTimer = 0;
                 bot.dunder.foundPath = true;
                 console.log("Found path in " + bot.dunder[objStuff.attempts] + " attempts.");
@@ -1342,6 +1355,7 @@ var doFindingPath = function(bot, objStuff, extension, correction, endX, endY, e
                //console.log("Did not find full path quickly, taking the best known one known so far...");
 
                console.log("Did not find full path quickly");
+               bot.dunderTaskDetails.failedPathfind = {x:endX, y:endY, z:endZ};
                bot.dunder[objStuff.movesToGo] = [];
 
                console.log(bot.dunder.goal);

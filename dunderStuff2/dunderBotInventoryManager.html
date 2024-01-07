@@ -1,0 +1,1410 @@
+<html>
+<title>DunderBot Inventory Manager Tests</title>
+<h1>DunderBot Inventory Manager Tests</h1>
+<h2 id = "inventoryContext"></h2>
+<canvas width = "576" height = "576" id = "canvas"></canvas>
+<p id = "p"></p>
+    
+<script>
+    var superStartTime = window.performance.now();
+    var mcData = {
+        items:[],
+        recipes:{},
+        blockCollisionShapes:{},
+        blockLoot:[],
+        entityLoot:[],
+    };
+</script>
+    <!--From prismarine-data https://github.com/PrismarineJS/minecraft-data/blob/master/data/pc/1.20/-->
+    <script src = "items.txt"></script>
+    <script src = "recipes.txt"></script>
+    <script src = "blockCollisionShapes.txt"></script>
+    <script src = "foods.txt"></script>
+    <script src = "blockLoot.txt"></script>
+    <script src = "entityLoot.txt"></script>
+    <!--From prismarine-data https://github.com/PrismarineJS/minecraft-data/blob/master/data/pc/1.20/-->
+
+<script>
+try {
+//avascript:for(var i = 0; i < mcData.items.length; i++) {if (mcData.items[i].name.includes("_chestplate")) {alert(mcData.items[i].name);}}
+/*
+TODO:
+If the player has cooked beef and no cooked pork, and an equal amount
+of raw beef and pork, the raw beef should get some sort of bonus.
+
+If hoglins or pigs are nearby and food is needed, pork items should have
+some sort of bonus.
+
+Most valuable food
+Most valuable block
+Crafting scoring(INCLUDING BLOCK BREAKING)
+Armor scoring
+Empty bucket scoring
+Ender pearl/eye pf ender/blaze rod scoring
+
+*/
+var leBot = {
+  "health":20,
+  "food":20,
+  "foodSaturation":5,
+  "oxygenLevel":20,
+    
+  "inWater":false,
+  "inLava":false,
+  "inCobweb":false,
+  "onFire":false,
+  "dunder":{
+      "bestSword":0,
+      "bestAxe":0,
+      "bestPickaxe":0,
+      "bestShovel":0,
+      "bestHoe":0,
+      
+      "bestGarbageBlock":"",
+
+      "waterBuckets":1,
+      "pufferfishBuckets":1,
+      "lavaBuckets":2,
+      //"shieldScore":100,
+      //"flintAndSteelCount":0,
+      "boatCount":0,
+      "itemCounts":{},
+      "blockStacks":0,
+  },
+};
+var ogDunder = JSON.parse(JSON.stringify(leBot.dunder));
+//Sweet berries have a double value: one as a PvP item and the other as a
+//food item.
+    
+//Food has relative value. More stackable foods + more saturating foods
+//are more valuable
+    
+//Blocks have relative value. I.e. deepslate is more than cobble, which is more
+//than dirt, but a stack of dirt is better than 2 cobble.
+var swords = {
+    "wooden_sword":1,
+    "stone_sword":3,
+    "golden_sword":2,
+    "iron_sword":4,
+    "diamond_sword":5,
+    "netherite_sword":6,
+};
+var axes = {
+    "wooden_axe":1,
+    "stone_axe":3,
+    "golden_axe":2,
+    "iron_axe":4,
+    "diamond_axe":5,
+    "netherite_axe":6,
+};
+var pickaxes = {
+    "wooden_pickaxe":1,
+    "stone_pickaxe":3,
+    "golden_pickaxe":2,
+    "iron_pickaxe":4,
+    "diamond_pickaxe":5,
+    "netherite_pickaxe":6,
+};
+    
+function resetInventory(bot) {
+    for (var i = 0; i < inventoryItemNames.length; i++) {
+        if (inventoryItemNames[i] == null) {
+            inventoryItemNames.splice(i, 1);
+            i--;
+            continue;
+        }
+        
+        inventoryItemNames[i] = inventoryItemNames[i][0];
+    }
+};
+function optimizeInventory(bot) {
+    for (var i = 0; i < inventoryItemNames.length; i++) {
+        var iins = inventoryItemNames[i].split(" ");
+        if (pickaxes[iins[0]] && pickaxes[iins[0]] > bot.dunder.bestPickaxe) {
+            bot.dunder.bestPickaxe = pickaxes[iins[0]];
+        } else if (swords[iins[0]] && swords[iins[0]] > bot.dunder.bestSword) {
+            bot.dunder.bestSword = swords[iins[0]];
+        } else if (axes[iins[0]] && axes[iins[0]] > bot.dunder.bestAxe) {
+            bot.dunder.bestAxe = axes[iins[0]];
+        }
+        
+        var inventoryStuffA = inventoryItemNames[i].split(" ");
+        if (inventoryStuffA.length <= 1) {continue;}
+        for (var j = i + 1; j < inventoryItemNames.length; j++) {
+            var maxStackSize = 64;
+            var inventoryStuffB = inventoryItemNames[j].split(" ");
+            if (inventoryStuffB.length <= 1) {continue;}
+            if (inventoryStuffA[0] == inventoryStuffB[0]) {
+                //alert(Number(inventoryStuffA[1]));
+                //alert(Number(inventoryStuffB[1]));
+                if (Number(inventoryStuffA[1]) + Number(inventoryStuffB[1]) > 64) {
+                    inventoryStuffB[1] = Number(inventoryStuffB[1]) - (64 - Number(inventoryStuffA[1]))
+                    inventoryStuffA[1] = 64;
+                    inventoryItemNames[j] = inventoryStuffB[0] + " " + inventoryStuffB[1];
+                } else {
+                    inventoryStuffA[1] = Number(inventoryStuffA[1]) + Number(inventoryStuffB[1]);
+                    inventoryItemNames.splice(j, 1);
+                    j--;
+                }
+                //inventoryStuffB[1] = Number(inventoryStuffB[1]) - 
+            } else {
+                continue;
+            }
+            inventoryItemNames[i] = inventoryStuffA[0] + " " + inventoryStuffA[1];
+            //alert(inventoryStuffA);
+            //return;
+        }
+    }
+};
+    
+function findBestInventoryGroups(bot) {
+    /*for (var i = 0; i < inventoryItemNames.length; i++) {
+        var iins = inventoryItemNames[i].split(" ");
+        if (mcData.blockCollisionShapes.blocks[iins[0]] == 1) {
+            console.log(i);
+        }
+    }*/
+};
+    
+function getFood(iN) {
+    for (var i = 0; i < mcData.foods.length; i++) {
+        if (mcData.foods[i].name == iN) {
+            return mcData.foods[i];
+            i = mcData.foods.length;
+        }
+    }
+    return false;
+};
+
+//returnItemScore, itemName
+function returnItemScore(bot, iN, iC, iS) {
+  /*
+  NOTE: we don't care if the top 20 items or so are poorly ordered, so long as
+  those top 20 items are similar in all cases and are all items we'd want to
+  keep almost regardless of the circumstances, like food, blocks, picks, etc.
+  */
+  bot.dunder.itemCounts[iN] = (bot.dunder.itemCounts[iN] ? bot.dunder.itemCounts[iN] + 1 : 1)
+  iC = (iC) ? Number(iC) : 1;
+  var tS = 0;
+  switch(iN) {
+    case "bow":
+      tS += 40;//WIP, needs to be less valuable when no arrows
+    break;
+    case "arrow":
+      tS += 5 * iC;//WIP, needs to be less valuable when no bow and when more arrows
+    break;
+    case "spectral_arrow":
+      tS += 5 * iC;//WIP, needs to be less valuable when no bow and when more arrows
+    break;
+    case "string":
+      tS += 3;//WIP
+    break;
+
+    case "crafting_table":
+      tS += 80 + Math.sqrt(iC) * 0.5;
+    break;
+          
+    //All of these items aid in getting an enchantment table, but are
+    //Less valuable when you have one already/don't need one/won't use one
+    case "obsidian":
+      tS += 0;
+    break;
+    case "leather":
+      tS += 0;
+      tS += 0;
+    break;
+    case "paper":
+      tS += 0;
+      tS += 0;
+    break;
+    case "book":
+      tS += 0;
+      tS += 0;
+    break;
+    case "lapis":
+      tS += 0;
+      tS += 0;
+    break;
+    //All of these items aid in getting an enchantment table, but are
+    //Less valuable when you have one already/don't need one/won't use one
+
+    case "golden_apple":
+      tS += 20 + 50 * iC;
+    break;
+
+
+    case "cobweb":
+      tS += 20 + 20 * Math.sqrt(iC);
+    break;
+
+    case "totem_of_undying":
+      tS += 110 * Math.pow(0.9, bot.dunder.itemCounts[iN]);
+      tS += 5.5;
+    break;
+
+    case "":
+      tS += 0;
+      tS += 0;
+    break;
+
+    case "":
+      tS += 0;
+      tS += 0;
+    break;
+
+    case "pufferfish_bucket":
+         tS += 200 / (bot.dunder.pufferfishBuckets * bot.dunder.pufferfishBuckets);
+        bot.dunder.waterBuckets++;
+        bot.dunder.pufferfishBuckets++;
+    break;
+    case "lava_bucket":
+      tS += 1 + (200 / (bot.dunder.lavaBuckets * bot.dunder.lavaBuckets));
+      bot.dunder.lavaBuckets++;
+    break;
+    case "flint_and_steel":
+      if (bot.dunder.flintAndSteelCount == 0) {
+          tS += 30;
+          bot.dunder.flintAndSteelCount++;
+      }
+      tS += 2;
+    break;
+    case "shield":
+      tS += 500 * Math.pow(1/5, bot.dunder.itemCounts[iN]);
+      //bot.dunder.shieldScore /= 5;
+      tS += 5;
+    break;
+
+    case "wooden_sword":
+      if (bot.dunder.bestSword == 1) {
+        tS += 100;
+        bot.dunder.bestSword = 0;
+      }
+      tS += 1;
+    break;
+    case "golden_sword":
+      if (bot.dunder.bestSword == 2) {
+        tS += 100;
+        bot.dunder.bestSword = 0;
+      }
+      tS += 9;
+    break;
+    case "stone_sword":
+      if (bot.dunder.bestSword == 3) {
+        tS += 100;
+        bot.dunder.bestSword = 0;
+      }
+      tS += 2;
+    break;
+    case "iron_sword":
+      if (bot.dunder.bestSword == 4) {
+        tS += 100;
+        bot.dunder.bestSword = 0;
+      }
+      tS += 10;
+    break;
+    case "diamond_sword":
+      if (bot.dunder.bestSword == 5) {
+        tS += 100;
+        bot.dunder.bestSword = 0;
+      }
+      tS += 11;
+    break;
+    case "netherite_sword":
+      if (bot.dunder.bestSword == 6) {
+        tS += 100;
+        bot.dunder.bestSword = 0;
+      }
+      tS += 12;
+    break;
+
+
+    case "golden_axe":
+      if (bot.dunder.bestAxe == 2) {
+        tS += 105;
+        bot.dunder.bestAxe = 0;
+      }
+      tS += 5;
+    break;
+    case "wooden_axe":
+      if (bot.dunder.bestAxe == 1) {
+        tS += 105;
+        bot.dunder.bestAxe = 0;
+      }
+      tS += 4;
+    break;
+    case "stone_axe":
+      if (bot.dunder.bestAxe == 3) {
+        tS += 105;
+        bot.dunder.bestAxe = 0;
+      }
+        tS += 5;
+    break;
+    case "iron_axe":
+      if (bot.dunder.bestAxe == 4) {
+        tS += 105;
+        bot.dunder.bestAxe = 0;
+      }
+        tS += 6;
+    break;
+    case "diamond_axe":
+      if (bot.dunder.bestAxe == 5) {
+        tS += 105;
+        bot.dunder.bestAxe = 0;
+      }
+        tS += 7;
+    break;
+    case "netherite_axe":
+      if (bot.dunder.bestAxe == 6) {
+        tS += 105;
+        bot.dunder.bestAxe = 0;
+      }
+        tS += 8;
+    break;
+          
+
+    case "golden_pickaxe":
+      if (bot.dunder.bestPickaxe == 2) {
+        tS += 105;
+        bot.dunder.bestPickaxe = 0;
+      }
+      tS += 7;
+    break;
+    case "wooden_pickaxe":
+      if (bot.dunder.bestPickaxe == 1) {
+        tS += 105;
+        bot.dunder.bestPickaxe = 0;
+      }
+      tS += 4;
+    break;
+    case "stone_pickaxe":
+      if (bot.dunder.bestPickaxe == 3) {
+        tS += 105;
+        bot.dunder.bestPickaxe = 0;
+      }
+        tS += 5;
+    break;
+    case "iron_pickaxe":
+      if (bot.dunder.bestPickaxe == 4) {
+        tS += 105;
+        leBot.dunder.bestPickaxe = 0;
+      }
+        tS += 8;
+    break;
+    case "diamond_pickaxe":
+      if (bot.dunder.bestPickaxe == 5) {
+        tS += 105;
+        bot.dunder.bestPickaxe = 0;
+      }
+        tS += 10;
+    break;
+    case "netherite_pickaxe":
+      if (bot.dunder.bestPickaxe == 6) {
+        tS += 105;
+        bot.dunder.bestPickaxe = 0;
+      }
+        tS += 12;
+    break;
+  }
+  var shouldReduce = true;
+  if (tS == 0) {
+    if (iN.includes("_bucket")) {
+        if (bot.dunder.pufferfishBuckets != bot.dunder.waterBuckets) {
+            tS += 200 / (bot.dunder.waterBuckets * bot.dunder.waterBuckets);
+        } else {
+            tS += 150;
+        }
+        bot.dunder.waterBuckets++;
+        shouldReduce = false;
+    }
+      //console.log(iN + ", " + mcData.blockCollisionShapes.blocks[iN]);
+      var isFood = getFood(iN);
+      if (iN.includes("_boat") || iN.includes("_raft")) {
+          bot.dunder.boatCount++;
+          tS += (bot.dunder.boatCount < 3) ? (50 - bot.dunder.boatCount*bot.dunder.boatCount*8) : (Math.sqrt(bot.dunder.boatCount) - Math.sqrt(bot.dunder.boatCount-1)) * 10;
+          shouldReduce = false;
+      } else if (isFood) {
+          tS += Math.sqrt(iC) * isFood.effectiveQuality;
+          if (isFood.name == "rotten_flesh") {
+              tS /= 3;
+          } else if (isFood.name == "spider_eye") {
+              tS /= 10;
+          }
+      } else if (mcData.blockCollisionShapes.blocks[iN] == 1) {
+          bot.dunder.blockStacks++;
+          tS += iC / bot.dunder.blockStacks;
+      }
+      //Novelty based value for unknown items.
+      //tS += 10 - (iC / 10);
+      //Quantity based value for unknown items.
+      tS += (iC / 10);
+      //Extreme-quantity based value for unknown items. 
+      //tS += Math.abs(32 - iC) / 5;
+      if (iN.includes("_door")) {
+          tS *= 10;
+          tS += 10;
+      }
+  } else {
+      shouldReduce = false;
+  }
+  
+  if (shouldReduce) {
+    tS /= bot.dunder.itemCounts[iN];
+  }
+  return tS;
+};
+
+function scoreInventory(bot) {
+    for (var i = 0; i < inventoryItemNames.length; i++) {
+        var iin = inventoryItemNames[i].split(" ");
+        inventoryItemNames[i] = [inventoryItemNames[i], returnItemScore(leBot, iin[0], iin[1])];
+    }
+
+    inventoryItemNames.sort((a, b) => {return b[1] - a[1];});
+};
+
+var inventoryItemNames = [
+  "water_bucket",
+  "water_bucket",
+  "tadpole_bucket",
+  "salmon_bucket",
+  "bucket 4",
+  "bucket 1",
+  "stone_pickaxe",
+  "golden_axe",
+  "bread 23",
+  "cooked_beef 55",
+  "bread 13",
+  "lava_bucket",
+  "diamond_sword",
+  "lava_bucket",
+  "cooked_beef 20",
+  "lava_bucket",
+  "flint_and_steel",
+  "wooden_pickaxe",
+  "iron_sword",
+  "wooden_pickaxe",
+  "water_bucket",
+  "water_bucket",
+  "water_bucket",
+  "lava_bucket",
+  "lava_bucket",
+  "stone_axe",
+  "shield",
+  "shield",
+  "shield",
+  //"cobblestone 43",
+  //"dirt 23",
+  "oak_door 5",
+  "spruce_door 2",
+  "golden_apple 1",
+  "gold_ingot 5",
+  "crafting_table 1",
+  "stick 5",
+  "string 3",
+  "arrow 10",
+  "bow",
+  "golden_helmet",
+  "beef 3",
+  "leather 2",
+  "obsidian 5",
+  "oak_boat",
+  "dark_oak_boat",
+  "bamboo_raft",
+];
+inventoryItemNames[-1] = null;
+//inventoryItemNames = [];
+for (var i = 0; i < 40; i++) {
+    var itemIndex = Math.floor(Math.random() * mcData.items.length);
+    inventoryItemNames.push(mcData.items[itemIndex].name + " " + (Math.ceil(Math.random() * mcData.items[itemIndex].stackSize)));
+}
+inventoryItemNames.push("iron_pickaxe 1");
+//var inventoryItemScores = [];
+
+    
+var p2 = document.getElementById("p");
+var p = {
+    "innerHTML":"",
+};
+
+var startTime = window.performance.now();
+optimizeInventory(leBot);
+findBestInventoryGroups(leBot);
+scoreInventory(leBot);
+//getBestItems(leBot);
+
+    
+console.log("inventory sorting time: " + (window.performance.now() - startTime));
+    
+function destroyImg(id) {
+    //console.log("hi " + id);
+    var element = document.getElementById(id);
+    if (element) {
+        element.remove();
+    }
+};
+    
+startTime = window.performance.now();
+for (var i = 0; i < inventoryItemNames.length; i++) {
+  var iin = inventoryItemNames[i][0].split(" ");
+  var iinc = 1;
+  if (iin.length > 1) {
+        iinc = iin[1];
+  }
+
+  p.innerHTML += /*"<img id = '" + (i*2) + "' src = 'blockImages/" + iin[0] + ".png' onerror='destroyImg(" + (i*2) + ")'>" + "<img id = '" + ((i*2) + 1) + "' src = 'itemImages/" + iin[0] + ".png' onerror='destroyImg(" + ((i*2) + 1) + ")'>"*/ + i + ". " + iin[0] + " x" + iinc + " : " + inventoryItemNames[i][1] + "<br>";
+  if (i == 36) {
+      p.innerHTML += "----------------------------------------<br>"
+  }
+}
+console.log("string display time: " + (window.performance.now() - startTime));
+
+    
+
+/*function dist3d(x1, y1, z1, x2, y2, z2) {
+    return Math.sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1) + (z2 - z1)*(z2 - z1));
+};
+    
+function distHat3d(x1, y1, z1, x2, y2, z2) {
+    return (x2 - x1) + (y2 - y1) + (z2 - z1);
+};
+
+var x = 0;
+var e1 = window.performance.now();
+for (var i = 0; i < 20000000; i++) {
+    x = distHat3d(Math.random() * 100, Math.random() * 100, Math.random() * 100, Math.random() * 100, Math.random() * 100, Math.random() * 100);
+}
+e1 = (window.performance.now() - e1);
+
+x = 0;
+var e2 = window.performance.now();
+for (var i = 0; i < 20000000; i++) {
+    //x = i;
+    x = dist3d(Math.random() * 100, Math.random() * 100, Math.random() * 100, Math.random() * 100, Math.random() * 100, Math.random() * 100);
+}
+e2 = (window.performance.now() - e2);
+alert("Manhattan: " + e1 + "\nDistance: " + e2);*/
+//alert("done");
+    
+    
+} catch (err) {
+    alert(err);
+    console.log(err);
+}
+</script>
+    
+<img src = "blocksAndItemsImage.png" id = "blocksAndItems">
+<script>
+var can = document.getElementById("canvas").getContext("2d");
+can.imageSmoothingEnabled = false;
+//Derisory's image function
+var image = function(src, slices, x, y, w, h) {
+  if (slices != undefined) {
+    if (slices.shiftX != undefined) {
+        x += slices.shiftX;
+        y += slices.shiftY;
+    }
+
+    if (w == undefined) {
+        w = slices.w;
+        h = slices.h;
+    }
+    can.drawImage(document.getElementById(src), slices.x, slices.y, slices.w, slices.h, x, y, w, h);
+  }
+};
+function renderItem(id, x, y, s) {
+    if (Number(id) !== id) {
+        for (var i = 0; i < mcData.items.length; i++) {
+            if (mcData.items[i].name == id) {
+                id = i;
+                i = mcData.items.length;
+            }
+        }
+    }
+    image("blocksAndItems", {x:(Math.floor(id) % 36) * 16,y:Math.floor(Math.floor(id) / 36) * 16,w:16,h:16},
+          x, y, 16*s, 16*s);
+    if (!mcData.items[id]) {
+        
+    } else if (mcData.items[id].name == "shield") {
+        can.fillStyle = "rgb(64, 64, 64)";
+        can.fillRect(x + 2 * s, y + 0 * s, 11, 15);
+        can.fillStyle = "rgb(200, 0, 0)";
+        can.fillRect(x + 3 * s, y + 1 * s, 9, 13);
+        can.fillStyle = "rgb(150, 0, 0)";
+        can.fillRect(x + 3 * s, y + 1 * s, 8, 12);
+        can.fillStyle = "rgb(128, 128, 128)";
+        for (var i = 0; i < 4; i++) {
+            can.fillRect(x + 4, y + 2 + i * 3, s, s);
+            can.fillRect(x + 9, y + 2 + i * 3, s, s);
+        }
+    } else if (mcData.items[id].name == "crafting_table") {
+        can.fillStyle = "rgb(64, 64, 64)";
+        can.fillRect(x + 0 * s, y + 0 * s, 16, 16);
+        can.fillStyle = "rgb(150, 0, 0)";
+        can.fillRect(x + 1 * s, y + 1 * s, 14, 14);
+        can.fillStyle = "rgb(200, 0, 0)";
+        can.fillRect(x + 1 * s, y + 1 * s, 13, 13);
+        can.fillStyle = "rgb(0, 0, 0)";
+        for (var i = 0; i < 3; i++) {
+            can.fillRect(x + 3, y + 3 + i * 4, s, s);
+            can.fillRect(x + 7, y + 3 + i * 4, s, s);
+            can.fillRect(x + 11, y + 3 + i * 4, s, s);
+        }
+    }
+};
+    
+function valueToTenStr(num) {
+    num = Math.floor(num * 10) / 10;
+    if (num < 0) {num = 0;}
+    return num + ((num != Math.floor(num)) ? "" : ".0");
+};
+    
+    
+var mouseX = 0;
+var mouseY = 0;
+document.addEventListener("mousemove", (e) => {
+    mouseX = getMousePos(document.getElementById("canvas"), e).x;
+    mouseY = getMousePos(document.getElementById("canvas"), e).y;
+});
+//Some code I took from stackoverflow or something
+function getMousePos(canvas, evt) {
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      var scaleY = canvas.height / rect.height; 
+      return {
+          x: (evt.clientX - rect.left) * scaleX,
+          y: (evt.clientY - rect.top) * scaleY
+      };
+};
+function line(x1, y1, x2, y2) {
+can.beginPath();
+can.moveTo(x1, y1);
+can.lineTo(x2, y2);
+can.closePath();
+can.strokeStyle = can.fillStyle;
+can.stroke();
+};
+function itemBox(slot, x, y) {
+    //console.log(slot + ", " + inventoryItemNames[slot]);
+    //if (!inventoryItemNames[slot]) {return;}
+    //if () {return;}
+    can.textAlign = "right";
+    can.fillStyle = "rgb(96, 96, 96)";
+    if (mouseX / 2 > x && mouseY / 2 > y && mouseX / 2 < x + 19 && mouseY / 2 < y + 19) {
+        can.fillStyle = "rgb(128, 128, 128)";
+        //if (inventoryItemNames[slot]) {
+            if (inventoryItemNames[slot]) {cursorText = inventoryItemNames[slot][0].split(" ")[0];}
+            var num = null; 
+            if (inventoryItemNames[slot]) {num = inventoryItemNames[slot][0].split(" ")[1];}
+            if (!num) {num = 1;}
+            if (keysDown[32]) {
+                num--;
+                var isFood = null;
+                if (inventoryItemNames[slot]) {isFood = getFood(inventoryItemNames[slot][0].split(" ")[0]);}
+                if (isFood) {
+                    leBot.foodSaturation += isFood.saturation;
+                    if (leBot.foodSaturation > 20) {leBot.foodSaturation = 20;}
+                    leBot.food += isFood.foodPoints;
+                    if (leBot.food > 20) {leBot.food = 20;}
+                    if (leBot.health > 20) {leBot.health = 20;}
+                }
+                if (num <= 0) {
+                    inventoryItemNames[slot] = null;
+                } else {
+                    inventoryItemNames[slot][0] = inventoryItemNames[slot][0].split(" ")[0] + " " + num;
+                }
+                leBot.dunder = JSON.parse(JSON.stringify(ogDunder));
+                toReset = true;
+            } else if (clicked) {
+                toSwap = [slot, -1];
+                clicked = false;
+            } else if (keysDown[70]) {
+                toSwap = [slot, 37];
+            } else {
+                for (var i = 0; i < 9; i++) {
+                    if (keysDown[49 + i]) {
+                        toSwap = [slot, 27 + i];
+                        i = 10;
+                    }
+                }
+            }
+        //}
+    }
+    can.fillRect(x, y, 18, 18);
+    if (inventoryItemNames[slot]) {renderItem(inventoryItemNames[slot][0].split(" ")[0], x + 1, y + 1, 1);}
+    
+    if (inventoryItemNames[slot] && inventoryItemNames[slot][0].split(" ").length >= 2 && inventoryItemNames[slot][0].split(" ")[1] > 1) {
+        can.fillStyle = "rgb(0, 0, 0)";
+        can.fillText(inventoryItemNames[slot][0].split(" ")[1], 16+x+1, 16+y+1);
+        can.fillStyle = "rgb(255, 255, 255)";
+        can.fillText(inventoryItemNames[slot][0].split(" ")[1], 16+x, 16+y);
+    }
+};
+var cursorText = "";
+var clicked = false;
+var toReset = false;
+var toSwap = [];
+    
+var keys = [];
+var keysDown = [];
+document.addEventListener("keydown",function(e) {
+    e.preventDefault();
+    if (!keys[e.keyCode]) {
+        keysDown[e.keyCode] = true;
+    } else {
+        keysDown[e.keyCode] = false;
+    }
+    keys[e.keyCode] = true;
+});
+
+document.addEventListener("keyup",function(e) {
+    e.preventDefault();
+    keysDown[e.keyCode] = false;
+    keys[e.keyCode] = false;
+});
+
+document.getElementById("canvas").addEventListener("click", (e) => {
+    clicked = 1;
+    if (e.which == 3) {
+        clicked = 2;
+    }
+});
+
+var boxX = 48;
+var boxY = 16;
+var boxW = 172;
+var boxH = 172;
+function run() {
+cursorText = "";
+can.save();
+can.scale(2, 2);
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(0, 0, 576, 576);
+
+//renderItem("iron_sword", 200, 200, 2);
+    
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(0, 0, 576, 576);
+can.fillStyle = "rgb(144, 144, 144)";
+can.fillRect(boxX, boxY-1, boxW, boxH);
+can.fillStyle = "rgb(80, 80, 80)";
+//alert(inventoryItemNames[20][0]);
+    
+
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(boxX + 20, boxY, 56, 75);
+    
+//stick figure
+//can.fillStyle = "rgb(255, 255, 255)";
+//line(boxX + 48, boxY + 38, boxX + 48, boxY + 64);
+    
+can.textAlign = "left";
+can.font = "7px arial";
+if (leBot.onFire) {
+    can.fillStyle = "rgba(" + (240 + Math.random() * 10) + ",0,0, 0.8)";
+    for (var i = 0; i < 56; i += 4) {
+        var myRandomVal = Math.random() * 5;
+        can.fillRect(boxX + 20 + i, boxY + 65 - myRandomVal, 4, 10 + myRandomVal);
+    }
+    can.fillStyle = "rgb(255, 255, 255)";
+    can.fillText("On fire", boxX + 23, boxY + 14);
+}
+if (leBot.inLava) {
+    can.fillStyle = "rgba(255, 0, 0, 0.3)";
+    can.fillRect(boxX + 20, boxY, 56, 75);
+    can.fillStyle = "rgb(255, 255, 255)";
+    can.fillText("In lava", boxX + 23, boxY + 7);
+} else if (leBot.inWater) {
+    can.fillStyle = "rgba(0, 0, 255, 0.25)";
+    can.fillRect(boxX + 20, boxY, 56, 75);
+    can.fillStyle = "rgb(255, 255, 255)";
+    can.fillText("In water", boxX + 23, boxY + 7);
+}
+    
+can.save();
+can.translate(0, -(172-boxH));
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(boxX + 1, boxY + 76 + 57, 20 * 3.8, 8);
+can.fillStyle = "rgb(0, 0, 255)";
+can.fillRect(boxX + 2, boxY + 76 + 58, Number(valueToTenStr(leBot.oxygenLevel)) * 3.8 - 2, 6);
+can.textAlign = "center";
+can.font = "7px arial";
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillText(valueToTenStr(leBot.oxygenLevel), boxX + 38+0.5, boxY + 76 + 64);
+can.fillStyle = "rgb(255, 255, 255)";
+can.fillText(valueToTenStr(leBot.oxygenLevel), boxX + 38, boxY + 76 + 58 + 5.5);
+    
+
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(boxX + 1, boxY + 86 + 57, 20 * 3.8, 8);
+can.fillStyle = "rgb(255, 0, 0)";
+can.fillRect(boxX + 2, boxY + 86 + 58, Number(valueToTenStr(leBot.health)) * 3.8 - 2, 6);
+can.textAlign = "center";
+can.font = "7px arial";
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillText(valueToTenStr(leBot.health), boxX + 39, boxY + 86 + 64);
+can.fillStyle = "rgb(255, 255, 255)";
+can.fillText(valueToTenStr(leBot.health), boxX + 38, boxY + 86 + 63.5);
+    
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(94 + boxX + 1, boxY + 76 + 57, 20 * 3.8, 8);
+can.fillStyle = "rgb(200, 0, 0)";
+can.fillRect(94 + boxX + 2, boxY + 76 + 58, Number(valueToTenStr(leBot.foodSaturation)) * 3.8 - 2, 6);
+can.textAlign = "center";
+can.font = "7px arial";
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillText(valueToTenStr(leBot.foodSaturation), 94 + boxX + 39, boxY + 76 + 64);
+can.fillStyle = "rgb(255, 255, 255)";
+can.fillText(valueToTenStr(leBot.foodSaturation), 94 + boxX + 38, boxY + 76 + 58 + 5.5);
+    
+
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(94 + boxX + 1, boxY + 86 + 57, 20 * 3.8, 8);
+can.fillStyle = "rgb(155, 0, 0)";
+can.fillRect(94 + boxX + 2, boxY + 86 + 58, Number(valueToTenStr(leBot.food)) * 3.8 - 2, 6);
+can.textAlign = "center";
+can.font = "7px arial";
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillText(valueToTenStr(leBot.food), 94 + boxX + 39, boxY + 86 + 64);
+can.fillStyle = "rgb(255, 255, 255)";
+can.fillText(valueToTenStr(leBot.food), 94 + boxX + 38, boxY + 86 + 58 + 5.5);
+can.restore();
+
+if (leBot.foodSaturation > 0) {
+    leBot.foodSaturation -= 0.01;
+} else {
+    leBot.food -= 0.01;
+}
+if (leBot.inWater) {
+    leBot.oxygenLevel -= 0.1;
+} else if (leBot.oxygenLevel < 20) {
+    leBot.oxygenLevel += 0.1;
+} else {
+    leBot.oxygenLevel = 20;
+}
+leBot.health -= 0.001;
+if (leBot.food < 0) {leBot.food = 0;}
+if (leBot.foodSaturation < 0) {leBot.foodSaturation = 0;}
+if (leBot.health < 0) {leBot.health = 0;}
+if (leBot.oxygenLevel < 0) {leBot.oxygenLevel = 0;}
+
+can.font = "7px arial";
+//can.textAlign = "end";
+    
+//if (keysDown[69]) {boxH += 19;}
+for (var i = 0; i < 36; i++) {
+    itemBox(i, boxX + 1 + (i * 19) - Math.floor(i / 9) * 9*19, -(172-boxH) + boxY + 76 + (i >= 27) * 19 + Math.floor((i / 9)) * 19);
+    //can.fillText(inventoryItemNames[i][0].split(","
+}
+itemBox(37, boxX + 77, boxY+57);
+itemBox(138, boxX+1, boxY);
+itemBox(139, boxX+1, boxY+19);
+itemBox(140, boxX+1, boxY+38);
+itemBox(141, boxX+1, boxY+57);
+
+itemBox(142, boxX+96, boxY+19);
+itemBox(143, boxX+115, boxY+19);
+itemBox(144, boxX+96, boxY+38);
+itemBox(145, boxX+115, boxY+38);
+itemBox(146, boxX+153, boxY+29);
+    
+for (var i = 38; i < inventoryItemNames.length; i++) {
+    itemBox(i, ((i - 38) % 15) * 19, -(172-boxH) + boxY + 180 + Math.floor((i - 38) / 15) * 19);
+}
+
+if (inventoryItemNames[-1] != null) {
+    document.getElementById("canvas").style.cursor = "none";
+    renderItem(inventoryItemNames[-1][0].split(" ")[0], (mouseX / 2) - 8, (mouseY / 2) - 8, 1);
+    if (inventoryItemNames[-1][0].split(" ")[1]) {
+        can.textAlign = "right";
+        can.fillStyle = "rgb(0, 0, 0)";
+        can.fillText(inventoryItemNames[-1][0].split(" ")[1], 8+(mouseX/2)+1, 8+(mouseY/2)+1);
+        can.fillStyle = "rgb(255, 255, 255)";
+        can.fillText(inventoryItemNames[-1][0].split(" ")[1], 8+(mouseX/2), 8+(mouseY/2));
+    }
+    
+    
+    renderItem(inventoryItemNames[-1][0].split(" ")[0], 152+(boxX), (boxY), 1);
+    if (inventoryItemNames[-1][0].split(" ")[1]) {
+        can.textAlign = "right";
+        can.fillStyle = "rgb(0, 0, 0)";
+        can.fillText(inventoryItemNames[-1][0].split(" ")[1], 152+(boxX+16)+1, 16+(boxY)+1);
+        can.fillStyle = "rgb(255, 255, 255)";
+        can.fillText(inventoryItemNames[-1][0].split(" ")[1], 152+(boxX+16), 16+(boxY));
+    }
+} else {
+    document.getElementById("canvas").style.cursor = "auto";
+}
+if (cursorText.length > 0) {
+    //document.getElementById("canvas").style.cursor = "none";
+    can.textAlign = "left";
+    can.fillStyle = "rgb(0, 0, 0)";
+    can.fillText(cursorText, mouseX / 2 + 1, mouseY / 2 + 1);
+    can.fillStyle = "rgb(255, 255, 255)";
+    can.fillText(cursorText, mouseX / 2, mouseY / 2);
+} else {
+    //document.getElementById("canvas").style.cursor = "auto";
+}
+    
+can.restore();
+clicked = false;
+if (toReset) {
+    resetInventory(leBot);
+    optimizeInventory(leBot);
+    findBestInventoryGroups(leBot);
+    scoreInventory(leBot);
+}
+if (toSwap.length > 0) {
+    if (inventoryItemNames[toSwap[0]]) {
+        toSwap.push(JSON.parse(JSON.stringify(inventoryItemNames[toSwap[0]])));
+    } else {
+        toSwap.push(null);
+    }
+    inventoryItemNames[toSwap[0]] = inventoryItemNames[toSwap[1]];
+    inventoryItemNames[toSwap[1]] = toSwap[2];
+}
+    
+toReset = false;
+toSwap = [];
+keysDown = [];
+requestAnimationFrame(run);
+};
+//run();
+</script>
+    
+<script>
+    //crafting stuff 2: electric boogaloo
+try {
+function itemBox2(slot, x, y) {
+    //console.log(slot + ", " + inventoryItemNames[slot]);
+    //if (!inventoryItemNames[slot]) {return;}
+    //if () {return;}
+    can.textAlign = "right";
+    can.fillStyle = "rgb(96, 96, 96)";
+    if (mouseX / 2 > x && mouseY / 2 > y && mouseX / 2 < x + 19 && mouseY / 2 < y + 19) {
+        can.fillStyle = "rgb(128, 128, 128)";
+        //if (inventoryItemNames[slot]) {
+            if (mcData.items[slot] && mcData.items[slot].name) {cursorText = mcData.items[slot].name;}
+            //var num = null; 
+            //if (inventoryItemNames[slot]) {num = inventoryItemNames[slot][0].split(" ")[1];}
+        //}
+        if (clicked) {
+    craftingNode = {id:slot, children:[], minables:[], killables:[]};
+    getCraftingRecipes(craftingNode.id, craftingNode);
+            clicked = false;
+        }
+    }
+    can.fillRect(x, y, 18, 18);
+    if (mcData.items[slot]) {
+        renderItem(mcData.items[slot].name, x + 1, y + 1, 1);
+    }
+    
+    /*if (mcData.items[slot] && mcData.items[slot].name) {
+        can.fillStyle = "rgb(0, 0, 0)";
+        can.fillText(inventoryItemNames[slot][0].split(" ")[1], 16+x+1, 16+y+1);
+        can.fillStyle = "rgb(255, 255, 255)";
+        can.fillText(inventoryItemNames[slot][0].split(" ")[1], 16+x, 16+y);
+    }*/
+};
+    
+    var recipeLength = 0;
+    for (var i in mcData.recipes) {
+        recipeLength++;
+    }
+    p.innerHTML += "<br><br><br>Crafting:<br>";
+    var randIndex = -Math.floor(Math.random() * recipeLength);
+    //randIndex = 105;
+    for (var i in mcData.recipes) {
+        if (randIndex > 0) {
+            continue;
+        }
+        randIndex++;
+        if (randIndex == 0) {
+            randIndex = Number(i);
+        }
+    }
+    //randIndex = 353;
+    //randIndex = 807;//stick
+    //randIndex = 302;//jack-o-lantern
+    //randIndex = 777;
+    var craftingNode = {id:randIndex, children:[], minables:[], killables:[]};
+    function getCraftingRecipes(id, parent) {
+        var n = 1;
+        //alert(JSON.stringify(mcData.recipes[randIndex]));
+        
+        for (var i = 0; i < mcData.blockLoot.length; i++) {
+            for (var j = 0; j < mcData.blockLoot[i].drops.length; j++) {
+                if (mcData.blockLoot[i].drops[j].item == mcData.items[id].name) {
+                    for (var k = 0; k < mcData.items.length; k++) {
+                        if (mcData.items[k].name == mcData.blockLoot[i].block) {
+                            parent.minables.push(k);
+                            k = mcData.items.length;
+                        }
+                    }
+                }
+            }
+        }    
+        for (var i = 0; i < mcData.entityLoot.length; i++) {
+            for (var j = 0; j < mcData.entityLoot[i].drops.length; j++) {
+                //console.log(mcData.entityLoot[i].drops[j].item + ", " + mcData.items[id].name);
+                if (mcData.entityLoot[i].drops[j].item == mcData.items[id].name) {
+                    //parent.killables.push(mcData.entityLoot[i].entity);
+                    //for (var k = 0; k < mcData.items.length; k++) {
+                        //if (mcData.items[k].name == mcData.entityLoot[i].drops[j].item) {
+                            parent.killables.push(mcData.entityLoot[i].entity);
+                            //k = mcData.items.length;
+                        //}
+                    //}
+                }
+            }
+        }
+
+        
+        if (parent && parent.parent && parent.parent.parent && parent.parent.parent.id - id == 0) {
+            //console.log(parent.parent.id);
+            //p.innerHTML += indentation(nDepth - n) + "O" + "<br>";
+            return null;
+        } else if (!id || !mcData.recipes[id] || n <= 0) {
+            //if (id) {p.innerHTML += indentation(nDepth - n) + "X" + "<br>";}
+            return null;
+        } else {
+            //console.log(mcData.recipes[id][0].inShape[0][0] !== undefined);
+          for (var k = 0; k < mcData.recipes[id].length; k++) {
+            if (mcData.recipes[id][k].processed) {
+                //p.innerHTML += indentation(nDepth - n) + "P<br>";
+                continue;
+            }
+            //mcData.recipes[id][k].processed = true;
+            if (mcData.recipes[id][k].inShape !== undefined && mcData.recipes[id][k].inShape[0] !== undefined && mcData.recipes[id][k].inShape[0][0] !== undefined) {
+                //alert("e");
+                var returnChildren = mcData.recipes[id][k].inShape;
+                //console.log(n + ": " + returnChildren);
+                for (var i = 0; i < returnChildren.length; i++) {
+                    for (var j = 0; j < returnChildren[i].length; j++) {
+                        if (!returnChildren[i][j]) {
+                            parent.children.push(-1);
+                            continue;
+                        }
+                        parent.children.push(returnChildren[i][j]);
+                        //console.log(returnChildren[i][j]);
+                        /*p.innerHTML += indentation(nDepth - n) + returnChildren[i][j] + ", " + mcData.items[returnChildren[i][j]].name + "<br>";
+                        returnChildren[i][j] = {id:returnChildren[i][j],children:[],parent:parent};
+                        returnChildren[i][j].children = getCraftingChildren(returnChildren[i][j].id, n - 1, returnChildren[i][j]);
+                        console.log(returnChildren[i][j]);*/
+                    }
+                    parent.children.push(-2);
+                }
+                parent.children.push(-3);
+            } else if (mcData.recipes[id][k].ingredients !== undefined) {
+                //alert("e");
+                var returnChildren = JSON.parse(JSON.stringify(mcData.recipes[id][k].ingredients));
+                //console.log(n + ": " + returnChildren);
+                for (var i = 0; i < returnChildren.length; i++) {
+                    if (!returnChildren[i]) {
+                        parent.children.push(-2);
+                        continue;
+                    }
+                    parent.children.push(returnChildren[i]);
+                    if (i % 2 == 1 && returnChildren.length <= 4 ||
+                        i % 3 == 2 && returnChildren.length > 4) {
+                        parent.children.push(-2);
+                    }
+                    //console.log(returnChildren[i][j]);
+                    /*p.innerHTML += indentation(nDepth - n) + returnChildren[i] + ", " + mcData.items[returnChildren[i]].name + "<br>";
+                    returnChildren[i] = {id:returnChildren[i],children:[],parent:parent};
+                    returnChildren[i].children = getCraftingChildren(returnChildren[i].id, n - 1, returnChildren[i]);
+                    console.log(returnChildren[i]);*/
+                }
+                parent.children.push(-3);
+            }
+          }
+        }
+    };
+    
+    
+    getCraftingRecipes(craftingNode.id, craftingNode);
+    function run2() {
+        if (keysDown[32]) {
+    randIndex = -Math.floor(Math.random() * recipeLength);
+    //randIndex = 105;
+    for (var i in mcData.recipes) {
+        if (randIndex > 0) {
+            continue;
+        }
+        randIndex++;
+        if (randIndex == 0) {
+            randIndex = Number(i);
+        }
+    }
+    craftingNode = {id:randIndex, children:[], minables:[], killables:[]};
+    getCraftingRecipes(craftingNode.id, craftingNode);
+        }
+        can.save();
+        can.scale(2, 2);
+        can.fillStyle = "rgb(0, 0, 0)";
+        can.fillRect(0, 0, 288, 288);
+        can.fillStyle = "rgb(128, 128, 128)";
+        can.fillRect(100, 50, 18, 18);
+        renderItem(mcData.items[craftingNode.id].name, 101, 51, 1);
+        can.fillStyle = "rgb(255, 255, 255)";
+        can.font = "14px arial";
+        can.fillText(mcData.items[craftingNode.id].name, 60, 30);
+        //for (var i = 0; i < craftingNod; i++) {}
+        //can.fillText(craftingNode.children.length, 60, 50);
+        var displayX = 0;
+        var displayY = 0;
+        //PURPUR STAIRS
+        //WHITE CARPET
+        //PINK_DYE
+        //PUMPKIN_PIE
+        //BLACK_CONCRETE_POWDER
+        //FIRE_CHARGE
+        //BOOK
+        for (var i = 0; i < craftingNode.children.length; i++) {
+            if (craftingNode.children[i] == -2 || craftingNode.children[i] == -3) {
+                displayX = 0;
+                displayY++;
+                if (craftingNode.children[i] == -3) {
+                    can.fillStyle = "rgb(255, 255, 255)";
+                    can.fillText(displayY, 100, 50 + (displayY+1)*19);
+                }
+                continue;
+            } else if (craftingNode.children[i] == -1) {
+                can.fillStyle = "rgb(128, 128, 128)";
+                can.fillRect(100 + (displayX-1)*19, 50 + (displayY+1)*19, 18, 18);
+                displayX++;
+                continue;
+            }
+            //can.fillStyle = "rgb(128, 128, 128)";
+            //can.fillRect(99 + (displayX-1)*19, 49 + (displayY+1)*19, 18, 18);
+            //renderItem(mcData.items[craftingNode.children[i]].name, 100 + (displayX-1)*19, 50 + (displayY+1)*19, 1);
+            itemBox2(craftingNode.children[i], 100 + (displayX-1)*19, 50 + (displayY+1)*19, 1);
+            //can.fillStyle = "rgb(255, 255, 255)";
+            //can.fillText(mcData.items[craftingNode.children[i]].name, 120, 50 + (displayY+1)*19);
+            displayX++;
+        }
+        for (var i = 0; i < craftingNode.minables.length; i++) {
+            //if (craftingNode.minables[i] == craftingNode.id) {continue;}
+            itemBox2(craftingNode.minables[i], 180, 50 + (i+1)*19, 1);
+        }
+
+        can.fillStyle = "rgb(255, 255, 255)";
+    can.textAlign = "left";
+    can.font = "10px arial";
+        
+        for (var i = 0; i < craftingNode.killables.length; i++) {
+            //if (craftingNode.minables[i] == craftingNode.id) {continue;}
+            //console.log(craftingNode.killables[i]);
+            can.fillText(craftingNode.killables[i], 200, 50 + (i+1)*19);
+        }
+        can.restore();
+        keysDown = [];
+        clicked = false;
+if (cursorText.length > 0) {
+    //document.getElementById("canvas").style.cursor = "none";
+    can.textAlign = "left";
+    can.font = "14px arial";
+    can.fillStyle = "rgb(0, 0, 0)";
+    can.fillText(cursorText, mouseX + 1, mouseY + 1);
+    can.fillStyle = "rgb(255, 255, 255)";
+    can.fillText(cursorText, mouseX, mouseY);
+} else {
+    //document.getElementById("canvas").style.cursor = "auto";
+}
+    
+        cursorText = "";
+        requestAnimationFrame(run2);
+    }
+    run2();
+} catch (err) {
+    console.log(err);
+}
+</script>
+    
+<script>
+//crafting stuff
+if (false) {
+try{
+    var recipeLength = 0;
+    for (var i in mcData.recipes) {
+        recipeLength++;
+    }
+    p.innerHTML += "<br><br><br>Crafting:<br>";
+    var randIndex = -Math.floor(Math.random() * recipeLength);
+    //randIndex = 105;
+    for (var i in mcData.recipes) {
+        if (randIndex > 0) {
+            continue;
+        }
+        randIndex++;
+        if (randIndex == 0) {
+            randIndex = Number(i);
+        }
+    }
+    //randIndex = 353;
+    //randIndex = 807;//stick
+    //randIndex = 302;//jack-o-lantern
+    //randIndex = 777;
+    var craftingNode = {id:randIndex, children:[]};
+    var i = 0;
+    function indentation(n) {
+        var str = "";
+        for (var i = 0; i < n; i++) {
+            str += "-";
+        }
+        return str;
+    };
+    var nDepth = 10;
+    function getCraftingChildren(id, n, parent) {
+        //alert(JSON.stringify(mcData.recipes[randIndex]));
+        if (parent && parent.parent && parent.parent.parent && parent.parent.parent.id - id == 0) {
+            //console.log(parent.parent.id);
+            p.innerHTML += indentation(nDepth - n) + "O" + "<br>";
+            return null;
+        } else if (!id || !mcData.recipes[id] || n <= 0) {
+            if (id) {p.innerHTML += indentation(nDepth - n) + "X" + "<br>";}
+            return null;
+        } else {
+            //console.log(mcData.recipes[id][0].inShape[0][0] !== undefined);
+          for (var k = 0; k < mcData.recipes[id].length; k++) {
+            if (mcData.recipes[id][k].processed) {
+                p.innerHTML += indentation(nDepth - n) + "P<br>";
+                continue;
+            }
+            mcData.recipes[id][k].processed = true;
+            if (mcData.recipes[id][k].inShape !== undefined && mcData.recipes[id][k].inShape[0] !== undefined && mcData.recipes[id][k].inShape[0][0] !== undefined) {
+                //alert("e");
+                var returnChildren = mcData.recipes[id][k].inShape;
+                //console.log(n + ": " + returnChildren);
+                for (var i = 0; i < returnChildren.length; i++) {
+                    for (var j = 0; j < returnChildren[i].length; j++) {
+                        if (!returnChildren[i][j]) {continue;}
+                        //console.log(returnChildren[i][j]);
+                        p.innerHTML += indentation(nDepth - n) + returnChildren[i][j] + ", " + mcData.items[returnChildren[i][j]].name + "<br>";
+                        returnChildren[i][j] = {id:returnChildren[i][j],children:[],parent:parent};
+                        returnChildren[i][j].children = getCraftingChildren(returnChildren[i][j].id, n - 1, returnChildren[i][j]);
+                        //console.log(returnChildren[i][j]);
+                    }
+                }
+            } else if (mcData.recipes[id][k].ingredients !== undefined) {
+                //alert("e");
+                var returnChildren = JSON.parse(JSON.stringify(mcData.recipes[id][k].ingredients));
+                //console.log(n + ": " + returnChildren);
+                for (var i = 0; i < returnChildren.length; i++) {
+                    if (!returnChildren[i]) {continue;}
+                    //console.log(returnChildren[i][j]);
+                    p.innerHTML += indentation(nDepth - n) + returnChildren[i] + ", " + mcData.items[returnChildren[i]].name + "<br>";
+                    returnChildren[i] = {id:returnChildren[i],children:[],parent:parent};
+                    returnChildren[i].children = getCraftingChildren(returnChildren[i].id, n - 1, returnChildren[i]);
+                    //console.log(returnChildren[i]);
+                }
+            }
+          }
+        }
+    };
+    p.innerHTML += mcData.items[craftingNode.id].name + "<br>";
+    craftingNode.children = getCraftingChildren(craftingNode.id, nDepth-1, craftingNode);
+    
+    //randIndex = 746;
+    //randIndex = 1161;
+    
+    //We can do better and make a tree
+    /*for (var i = 0; i < 10; i++) {
+        for (var j = 0; j < i; j++) {
+            p.innerHTML += "-";
+        }
+        if (!mcData.recipes[randIndex]) {
+            p.innerHTML += "X " + randIndex + ", " + mcData.items[randIndex].name;
+            i = 10;
+            continue;
+        }
+        p.innerHTML += mcData.recipes[randIndex][0].result.id + ", ";
+        p.innerHTML += mcData.items[mcData.recipes[randIndex][0].result.id].name + "<br>";
+        if (!mcData.recipes[mcData.recipes[randIndex][0].result.id]) {
+            i = 10;
+        } else {
+            if (mcData.recipes[randIndex][0].inShape && mcData.recipes[randIndex][0].inShape[0] && mcData.recipes[randIndex][0].inShape[0][0]) {
+                randIndex = mcData.recipes[randIndex][0].inShape[0][0];
+            } else if (mcData.recipes[randIndex][0].inShape && mcData.recipes[randIndex][0].inShape[0]) {
+                randIndex = mcData.recipes[randIndex][0].inShape[0];
+            } else if (mcData.recipes[randIndex][0].inShape) {
+                randIndex = mcData.recipes[randIndex][0].inShape;
+            } else if (mcData.recipes[randIndex][0].ingredients) {
+                randIndex = mcData.recipes[randIndex][0].ingredients[0];
+            } else {
+                alert(randIndex);
+                i = 10;
+            }
+            
+            if (randIndex.length > 0 || randIndex == null) {
+                p.innerHTML += " - AIR UPPER LEFT";
+                i = 10;
+            }
+            //if (!mcData.recipes[randIndex]) {
+            //    i = 10;
+            }
+        }
+    }*/
+}catch(err){
+    alert(err);
+    console.log(err);
+}
+}
+console.log("overall time: " + (window.performance.now() - superStartTime));
+</script>
+
+    
+<!--canvas width = "576" height = "576" id = "canvas"></canvas>
+<script>
+</script-->
+    
+<script>
+//Image generation
+/*
+var can = document.getElementById("canvas").getContext("2d");
+var successfulLoads = [];
+//Derisory's image function
+var image = function(src, slices, x, y, w, h) {
+  if (slices != undefined) {
+    if (slices.shiftX != undefined) {
+        x += slices.shiftX;
+        y += slices.shiftY;
+    }
+
+    if (w == undefined) {
+        w = slices.w;
+        h = slices.h;
+    }
+    can.drawImage(document.getElementById(src), slices.x, slices.y, slices.w, slices.h, x, y, w, h);
+    document.getElementById(src).remove();  
+  }
+};
+var destroyImage = function(src) {
+    document.getElementById(src).remove(); 
+};
+function drawSlice(k) {
+    //can.fillStyle = "rgb(0, 0, 0)"
+    //can.fillRect((k % 36) * 16, Math.floor(k / 36) * 16, 16, 16);
+    if (successfulLoads[Math.floor(k / 2)]) {
+        document.getElementById(k).remove(); 
+        return;
+    } else {
+        successfulLoads[Math.floor(k / 2)] = true;
+        image(k, {x:0,y:0,w:16,h:16}, (Math.floor(k / 2) % 36) * 16, Math.floor(Math.floor(k / 2) / 36) * 16, 16, 16);
+    }
+};
+    var i = 0;
+    //for (var i = 0; i < 100/*mcData.items.length*//*; i++) {
+    setInterval(() => {
+        //p.innerHTML += "<img src = 'itemImages/" + mcData.items[i].name + ".png' onerror='destroyImage(" + (i) + ")' onload='drawSlice(" + (i) + ")' id = '" + (i) + "'>";
+        i++;
+        p.innerHTML += "<img src = 'itemImages/" + mcData.items[i].name + ".png' onerror='destroyImage(" + (i * 2) + ")' onload='drawSlice(" + (i * 2) + ")' id = '" + (i * 2) + "'>";
+    //}
+    
+    //for (var i = 0; i < 100/*mcData.items.length*//*; i++) {
+        p.innerHTML += "<img src = 'blockImages/" + mcData.items[i].name + ".png' onerror='destroyImage(" +  (i * 2 + 1) + ")' onload='drawSlice(" + (i * 2 + 1) + ")' id = '" + (i * 2 + 1) + "'>";
+    }, 16);
+    //}
+*/
+</script>
+    
+</html>
