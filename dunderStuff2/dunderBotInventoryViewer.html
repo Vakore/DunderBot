@@ -1,0 +1,679 @@
+<html>
+<title>DunderBot Inventory Manager Tests</title>
+<h1>DunderBot Inventory Manager Tests</h1>
+<h2 id = "inventoryContext"></h2>
+<canvas width = "400" height = "400" id = "canvas"></canvas>
+<p id = "p"></p>
+    
+<script>
+    var superStartTime = window.performance.now();
+    var mcData = {
+        items:[],
+        recipes:{},
+        blockCollisionShapes:{},
+    };
+</script>
+    <!--From prismarine-datahttps://github.com/PrismarineJS/minecraft-data/blob/master/data/pc/1.20/-->
+    <script src = "items.txt"></script>
+    <script src = "recipes.txt"></script>
+    <script src = "blockCollisionShapes.txt"></script>
+    <script src = "foods.txt"></script>
+    <!--From prismarine-datahttps://github.com/PrismarineJS/minecraft-data/blob/master/data/pc/1.20/-->
+<script>
+var clickRequests = [];
+setInterval( () => {
+var myData = { "thing": "123", "clickRequests":clickRequests };
+fetch("/write", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify(myData),
+})
+  .then((response) => response.json())
+  .then((data) => {
+    leBot.quickBarSlot = data.quickBarSlot;
+    console.log(leBot.health + ", " + data.health);
+    if (data.isHp) {
+        leBot.foodSaturation = data.foodSaturation;
+        leBot.food = data.food;
+        if (leBot.health != data.health) {leBot.hpChanged = 20;}
+        leBot.health = data.health;
+        leBot.inWater = data.inWater;
+        leBot.inCobweb = data.inCobweb;
+        leBot.onFire = data.onFire;
+        leBot.inLava = data.inLava;
+    }
+    if (data.oxygenLevel < 20 && data.oxygenLevel != undefined) {
+        leBot.oxygenLevel = data.oxygenLevel;
+    }
+    console.log(JSON.stringify(data));
+    if (data.slots) {
+        if (data.selectedItem) {
+            inventoryItemNames[-1] = [data.selectedItem.name + " " + data.selectedItem.count, 0];
+        } else {
+            inventoryItemNames[-1] = null;
+        }
+
+        for (var i = 0; i < data.slots.length; i++) {
+            if (data.slots[i] == null) {
+                inventoryItemNames[i] = null;
+            } else {
+                inventoryItemNames[i] = [data.slots[i].name + " " + data.slots[i].count, 0];
+                //console.log(inventoryItemNames[i]);
+            }
+        }
+    }
+  });
+clickRequests = [];
+//clickRequests.splice(0, Math.floor(clickRequests.length / 2) * 2);
+//run();
+}, 100);
+</script>
+
+<script>
+try {
+var containerName = "Inventory";
+var leBot = {
+  "quickBarSlot":0,
+  "health":20,
+  "food":20,
+  "foodSaturation":5,
+  "oxygenLevel":20,
+  "hpChanged":false,
+    
+  "inWater":!false,
+  "inLava":false,
+  "inCobweb":false,
+  "onFire":false,
+  "dunder":{
+      "bestSword":0,
+      "bestAxe":0,
+      "bestPickaxe":0,
+      "bestShovel":0,
+      "bestHoe":0,
+      
+      "bestGarbageBlock":"",
+
+      "waterBuckets":1,
+      "pufferfishBuckets":1,
+      "lavaBuckets":2,
+      "shieldScore":100,
+      "flintAndSteelCount":0,
+      "boatCount":0,
+      "itemCounts":{},
+      "blockStacks":0,
+      "assumeUHC":Math.round(Math.random()),
+  },
+};
+var ogDunder = JSON.parse(JSON.stringify(leBot.dunder));
+    
+function resetInventory(bot) {
+    for (var i = 0; i < inventoryItemNames.length; i++) {
+        if (inventoryItemNames[i] == null) {
+            inventoryItemNames.splice(i, 1);
+            i--;
+            continue;
+        }
+        inventoryItemNames[i] = inventoryItemNames[i][0];
+    }
+};
+function optimizeInventory(bot) {
+    for (var i = 0; i < inventoryItemNames.length; i++) {
+        var iins = inventoryItemNames[i].split(" ");
+        
+        var inventoryStuffA = inventoryItemNames[i].split(" ");
+        if (inventoryStuffA.length <= 1) {continue;}
+        for (var j = i + 1; j < inventoryItemNames.length; j++) {
+            var maxStackSize = 64;
+            var inventoryStuffB = inventoryItemNames[j].split(" ");
+            if (inventoryStuffB.length <= 1) {continue;}
+            if (inventoryStuffA[0] == inventoryStuffB[0]) {
+                if (Number(inventoryStuffA[1]) + Number(inventoryStuffB[1]) > 64) {
+                    inventoryStuffB[1] = Number(inventoryStuffB[1]) - (64 - Number(inventoryStuffA[1]))
+                    inventoryStuffA[1] = 64;
+                    inventoryItemNames[j] = inventoryStuffB[0] + " " + inventoryStuffB[1];
+                } else {
+                    inventoryStuffA[1] = Number(inventoryStuffA[1]) + Number(inventoryStuffB[1]);
+                    inventoryItemNames.splice(j, 1);
+                    j--;
+                }
+            } else {
+                continue;
+            }
+            inventoryItemNames[i] = inventoryStuffA[0] + " " + inventoryStuffA[1];
+        }
+    }
+};
+    
+    
+function getFood(iN) {
+    for (var i = 0; i < mcData.foods.length; i++) {
+        if (mcData.foods[i].name == iN) {
+            return mcData.foods[i];
+            i = mcData.foods.length;
+        }
+    }
+    return false;
+};
+
+//returnItemScore, itemName
+function returnItemScore(bot, iN, iC, iS) {
+  return 0;
+};
+
+function scoreInventory(bot) {
+    for (var i = 0; i < inventoryItemNames.length; i++) {
+        var iin = inventoryItemNames[i].split(" ");
+        inventoryItemNames[i] = [inventoryItemNames[i], returnItemScore(leBot, iin[0], iin[1])];
+    }
+
+    //inventoryItemNames.sort((a, b) => {return b[1] - a[1];});
+};
+
+var inventoryItemNames = [
+  "water_bucket",
+  "water_bucket",
+  "tadpole_bucket",
+  "salmon_bucket",
+  "bucket 4",
+  "bucket 1",
+  "stone_pickaxe",
+  "golden_axe",
+  "bread 23",
+  "cooked_beef 55",
+  "bread 13",
+  "lava_bucket",
+  "diamond_sword",
+  "lava_bucket",
+  "cooked_beef 20",
+  "lava_bucket",
+  "flint_and_steel",
+  "wooden_pickaxe",
+  "iron_sword",
+  "wooden_pickaxe",
+  "water_bucket",
+  "water_bucket",
+  "water_bucket",
+  "lava_bucket",
+  "lava_bucket",
+  "stone_axe",
+  "shield",
+  "shield",
+  "shield",
+  "cobblestone 43",
+  "dirt 23",
+  "oak_door 5",
+  "spruce_door 2",
+  "golden_apple 1",
+  "gold_ingot 5",
+  "crafting_table 1",
+  "stick 5",
+  "string 3",
+  "arrow 10",
+  "bow",
+  "golden_helmet",
+  "beef 3",
+  "leather 2",
+  "obsidian 5",
+  "oak_boat",
+  "dark_oak_boat",
+  "bamboo_raft",
+];
+inventoryItemNames = [];
+
+inventoryItemNames[-1] = null;
+for (var i = 0; i < 40; i++) {
+    var itemIndex = Math.floor(Math.random() * mcData.items.length);
+    inventoryItemNames.push(mcData.items[itemIndex].name + " " + (Math.ceil(Math.random() * mcData.items[itemIndex].stackSize)));
+}
+inventoryItemNames.push("iron_pickaxe 1");
+optimizeInventory(leBot);
+scoreInventory(leBot);
+    
+    
+} catch (err) {
+    alert(err);
+    console.log(err);
+}
+</script>
+    
+<img src = "blocksAndItemsImage.png" id = "blocksAndItems">
+<img src = "icons.png" id = "icons">
+<script>
+var can = document.getElementById("canvas").getContext("2d");
+can.imageSmoothingEnabled = false;
+//Derisory's image function
+var image = function(src, slices, x, y, w, h) {
+  if (slices != undefined) {
+    if (slices.shiftX != undefined) {
+        x += slices.shiftX;
+        y += slices.shiftY;
+    }
+
+    if (w == undefined) {
+        w = slices.w;
+        h = slices.h;
+    }
+    can.drawImage(document.getElementById(src), slices.x, slices.y, slices.w, slices.h, x, y, w, h);
+  }
+};
+function renderItem(id, x, y, s) {
+    if (Number(id) !== id) {
+        for (var i = 0; i < mcData.items.length; i++) {
+            if (mcData.items[i].name == id) {
+                id = i;
+                i = mcData.items.length;
+            }
+        }
+    }
+    image("blocksAndItems", {x:(Math.floor(id) % 36) * 16,y:Math.floor(Math.floor(id) / 36) * 16,w:16,h:16},
+          x, y, 16*s, 16*s);
+    if (!mcData.items[id]) {
+        
+    } else if (mcData.items[id].name == "shield") {
+        can.fillStyle = "rgb(64, 64, 64)";
+        can.fillRect(x + 2 * s, y + 0 * s, 11, 15);
+        can.fillStyle = "rgb(200, 0, 0)";
+        can.fillRect(x + 3 * s, y + 1 * s, 9, 13);
+        can.fillStyle = "rgb(150, 0, 0)";
+        can.fillRect(x + 3 * s, y + 1 * s, 8, 12);
+        can.fillStyle = "rgb(128, 128, 128)";
+        for (var i = 0; i < 4; i++) {
+            can.fillRect(x + 4, y + 2 + i * 3, s, s);
+            can.fillRect(x + 9, y + 2 + i * 3, s, s);
+        }
+    } else if (mcData.items[id].name == "crafting_table") {
+        can.fillStyle = "rgb(64, 64, 64)";
+        can.fillRect(x + 0 * s, y + 0 * s, 16, 16);
+        can.fillStyle = "rgb(150, 0, 0)";
+        can.fillRect(x + 1 * s, y + 1 * s, 14, 14);
+        can.fillStyle = "rgb(200, 0, 0)";
+        can.fillRect(x + 1 * s, y + 1 * s, 13, 13);
+        can.fillStyle = "rgb(0, 0, 0)";
+        for (var i = 0; i < 3; i++) {
+            can.fillRect(x + 3, y + 3 + i * 4, s, s);
+            can.fillRect(x + 7, y + 3 + i * 4, s, s);
+            can.fillRect(x + 11, y + 3 + i * 4, s, s);
+        }
+    }
+};
+    
+function valueToTenStr(num) {
+    num = Math.floor(num * 10) / 10;
+    if (num < 0) {num = 0;}
+    return num + ((num != Math.floor(num)) ? "" : ".0");
+};
+    
+    
+var mouseX = 0;
+var mouseY = 0;
+document.addEventListener("mousemove", (e) => {
+    mouseX = getMousePos(document.getElementById("canvas"), e).x;
+    mouseY = getMousePos(document.getElementById("canvas"), e).y;
+});
+//Some code I took from stackoverflow or something
+function getMousePos(canvas, evt) {
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      var scaleY = canvas.height / rect.height; 
+      return {
+          x: (evt.clientX - rect.left) * scaleX,
+          y: (evt.clientY - rect.top) * scaleY
+      };
+};
+function line(x1, y1, x2, y2) {
+can.beginPath();
+can.moveTo(x1, y1);
+can.lineTo(x2, y2);
+can.closePath();
+can.strokeStyle = can.fillStyle;
+can.stroke();
+};
+function itemBox(slot, x, y, requiredItem) {
+    //console.log(slot + ", " + inventoryItemNames[slot]);
+    //if (!inventoryItemNames[slot]) {return;}
+    //if () {return;}
+    can.textAlign = "right";
+    can.fillStyle = "rgb(96, 96, 96)";
+    if (mouseX / 2 > x && mouseY / 2 > y && mouseX / 2 < x + 19 && mouseY / 2 < y + 19) {
+        if (clicked) {
+            clickRequests.push(slot);
+        }
+        can.fillStyle = "rgb(128, 128, 128)";
+        //if (inventoryItemNames[slot]) {
+            if (inventoryItemNames[slot]) {cursorText = inventoryItemNames[slot][0].split(" ")[0];}
+            var num = null; 
+            if (inventoryItemNames[slot]) {num = inventoryItemNames[slot][0].split(" ")[1];}
+            if (!num) {num = 1;}
+            if (keysDown[32]) {
+                num--;
+                var isFood = null;
+                if (inventoryItemNames[slot]) {isFood = getFood(inventoryItemNames[slot][0].split(" ")[0]);}
+                if (isFood) {
+                    leBot.foodSaturation += isFood.saturation;
+                    if (leBot.foodSaturation > 20) {leBot.foodSaturation = 20;}
+                    leBot.food += isFood.foodPoints;
+                    if (leBot.food > 20) {leBot.food = 20;}
+                    if (leBot.health > 20) {leBot.health = 20;}
+                }
+                if (num <= 0) {
+                    inventoryItemNames[slot] = null;
+                } else {
+                    inventoryItemNames[slot][0] = inventoryItemNames[slot][0].split(" ")[0] + " " + num;
+                }
+                leBot.dunder = JSON.parse(JSON.stringify(ogDunder));
+                toReset = true;
+            } else if (clicked && (requiredItem == null || (inventoryItemNames[-1] == null || inventoryItemNames[-1][0].includes(requiredItem))) ) {
+                //alert(inventoryItemNames[-1]);
+                toSwap = [slot, -1];
+                clicked = false;
+            } else if (keysDown[70]) {
+                toSwap = [slot, 45, 3];
+            } else {
+                for (var i = 0; i < 9; i++) {
+                    if (keysDown[49 + i]) {
+                        toSwap = [slot, 36 + i, 3];
+                        i = 10;
+                    }
+                }
+            }
+        //}
+    }
+    can.fillRect(x, y, 18, 18);
+    if (inventoryItemNames[slot]) {renderItem(inventoryItemNames[slot][0].split(" ")[0], x + 1, y + 1, 1);}
+    
+    if (inventoryItemNames[slot] && inventoryItemNames[slot][0].split(" ").length >= 2 && inventoryItemNames[slot][0].split(" ")[1] > 1) {
+        can.fillStyle = "rgb(0, 0, 0)";
+        can.fillText(inventoryItemNames[slot][0].split(" ")[1] + ":" + slot, 16+x+1, 16+y+1);
+        can.fillStyle = "rgb(255, 255, 255)";
+        can.fillText(inventoryItemNames[slot][0].split(" ")[1] + ":" + slot, 16+x, 16+y);
+    }
+};
+var cursorText = "";
+var clicked = false;
+var toReset = false;
+var toSwap = [];
+    
+var keys = [];
+var keysDown = [];
+document.addEventListener("keydown",function(e) {
+    e.preventDefault();
+    if (!keys[e.keyCode]) {
+        keysDown[e.keyCode] = true;
+    } else {
+        keysDown[e.keyCode] = false;
+    }
+    keys[e.keyCode] = true;
+});
+
+document.addEventListener("keyup",function(e) {
+    e.preventDefault();
+    keysDown[e.keyCode] = false;
+    keys[e.keyCode] = false;
+});
+
+document.getElementById("canvas").addEventListener("click", (e) => {
+    clicked = 1;
+    if (e.which == 3) {
+        clicked = 2;
+    }
+});
+
+var boxX = 16;
+var boxY = 16;
+var boxW = 172;
+var boxH = 172;
+function run() {
+cursorText = "";
+can.save();
+can.scale(2, 2);
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(0, 0, 576, 576);
+
+//renderItem("iron_sword", 200, 200, 2);
+    
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(0, 0, 576, 576);
+can.fillStyle = "rgb(144, 144, 144)";
+can.fillRect(boxX, boxY-15, boxW, boxH+14);
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillText(containerName, boxX+4, boxY-3);
+can.fillStyle = "rgb(255, 255, 255)";
+can.fillText(containerName, boxX+3, boxY-4);
+can.fillStyle = "rgb(80, 80, 80)";
+//alert(inventoryItemNames[20][0]);
+    
+
+    if (containerName == "Inventory") {
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(boxX + 20, boxY, 56, 75);
+    
+//stick figure
+//can.fillStyle = "rgb(255, 255, 255)";
+//line(boxX + 48, boxY + 38, boxX + 48, boxY + 64);
+    
+can.textAlign = "left";
+can.font = "7px arial";
+if (leBot.onFire) {
+    can.fillStyle = "rgba(" + (240 + Math.random() * 10) + ",0,0, 0.8)";
+    for (var i = 0; i < 56; i += 4) {
+        var myRandomVal = Math.random() * 5;
+        can.fillRect(boxX + 20 + i, boxY + 65 - myRandomVal, 4, 10 + myRandomVal);
+    }
+    can.fillStyle = "rgb(255, 255, 255)";
+    can.fillText("On fire", boxX + 23, boxY + 14);
+}
+if (leBot.inLava) {
+    can.fillStyle = "rgba(255, 0, 0, 0.3)";
+    can.fillRect(boxX + 20, boxY, 56, 75);
+    can.fillStyle = "rgb(255, 255, 255)";
+    can.fillText("In lava", boxX + 23, boxY + 7);
+} else if (leBot.inWater) {
+    can.fillStyle = "rgba(0, 0, 255, 0.25)";
+    can.fillRect(boxX + 20, boxY, 56, 75);
+    can.fillStyle = "rgb(255, 255, 255)";
+    can.fillText("In water", boxX + 23, boxY + 7);
+}
+    }
+can.save();
+can.translate(0, -(172-boxH));
+/*can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(boxX + 1, boxY + 76 + 57, 20 * 3.8, 8);
+can.fillStyle = "rgb(0, 0, 255)";
+can.fillRect(boxX + 2, boxY + 76 + 58, Number(valueToTenStr(leBot.oxygenLevel)) * 3.8 - 2, 6);
+can.textAlign = "center";
+can.font = "7px arial";
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillText(valueToTenStr(leBot.oxygenLevel), boxX + 38+0.5, boxY + 76 + 64);*/
+//can.fillStyle = "rgb(255, 255, 255)";
+//can.fillText(valueToTenStr(leBot.oxygenLevel), boxX + 38, boxY + 76 + 58 + 5.5);
+if (leBot.hpChanged > 0) {
+    leBot.hpChanged--;
+}
+
+    //if (containerName == "inventory") {
+for (var i = 0; i < 10; i++) {
+    image("icons", {x:16 + (leBot.hpChanged > 0 && leBot.hpChanged % 10 > 5) * 9,y:0,w:9,h:9}, 1 + boxX + i * 8, boxY + 86 + 56);
+}
+for (var i = 0; i < Math.ceil(leBot.health) / 2; i++) {
+    if (leBot.health - (i) * 2 > 1) {
+        image("icons", {x:52,y:0+leBot.dunder.assumeUHC*45,w:9,h:9}, 1 + boxX + i * 8, boxY + 86 + 56);
+    } else {
+        image("icons", {x:61,y:0+leBot.dunder.assumeUHC*45,w:9,h:9}, 1 + boxX + i * 8, boxY + 86 + 56);
+    }
+}
+    
+/*can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(boxX + 1, boxY + 86 + 57, 20 * 3.8, 8);
+can.fillStyle = "rgb(255, 0, 0)";
+can.fillRect(boxX + 2, boxY + 86 + 58, Number(valueToTenStr(leBot.health)) * 3.8 - 2, 6);
+can.textAlign = "center";
+can.font = "7px arial";
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillText(valueToTenStr(leBot.health), boxX + 39, boxY + 86 + 64);*/
+//can.fillStyle = "rgb(255, 255, 255)";
+//can.fillText(valueToTenStr(leBot.health), boxX + 38, boxY + 86 + 63.5);
+    
+/*can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(94 + boxX + 1, boxY + 76 + 57, 20 * 3.8, 8);
+can.fillStyle = "rgb(200, 0, 0)";
+can.fillRect(94 + boxX + 2, boxY + 76 + 58, Number(valueToTenStr(leBot.foodSaturation)) * 3.8 - 2, 6);
+can.textAlign = "center";
+can.font = "7px arial";
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillText(valueToTenStr(leBot.foodSaturation), 94 + boxX + 39, boxY + 76 + 64);*/
+//can.fillStyle = "rgb(255, 255, 255)";
+//can.fillText(valueToTenStr(leBot.foodSaturation), 94 + boxX + 38, boxY + 76 + 58 + 5.5);
+    
+
+for (var i = 0; i < 10; i++) {
+    image("icons", {x:16,y:27,w:9,h:9}, 90 + boxX - (i-9) * 8, boxY + 86 + 56);
+    if (leBot.foodSaturation - (i) * 2 < 0) {
+        continue;
+    } else if (leBot.foodSaturation - (i) * 2 > 1) {
+        image("icons", {x:34,y:27,w:9,h:9}, 90 + boxX - (i-9) * 8, boxY + 86 + 56);
+    } else {
+        image("icons", {x:34+5,y:27,w:9-5,h:9}, 5+90 + boxX - (i-9) * 8, boxY + 86 + 56);
+    }
+}
+for (var i = 0; i < Math.ceil(leBot.food) / 2; i++) {
+    if (leBot.food - (i) * 2 > 1) {
+        image("icons", {x:52,y:27,w:9,h:9}, 90 + boxX - (i-9) * 8, boxY + 86 + 56);
+    } else {
+        image("icons", {x:61,y:27,w:9,h:9}, 90 + boxX - (i-9) * 8, boxY + 86 + 56);
+    }
+}
+
+
+for (var i = 0; i < Math.ceil(leBot.oxygenLevel) / 2; i++) {
+    if (leBot.oxygenLevel - (i) * 2 > 0.2) {
+        image("icons", {x:16,y:18,w:9,h:9}, 90 + boxX - (i-9) * 8, boxY + 86 + 47);
+    } else {
+        image("icons", {x:25,y:18,w:9,h:9}, 90 + boxX - (i-9) * 8, boxY + 86 + 47);
+    }
+}
+/*can.fillStyle = "rgb(0, 0, 0)";
+can.fillRect(94 + boxX + 1, boxY + 86 + 57, 20 * 3.8, 8);
+can.fillStyle = "rgb(155, 0, 0)";
+can.fillRect(94 + boxX + 2, boxY + 86 + 58, Number(valueToTenStr(leBot.food)) * 3.8 - 2, 6);
+can.textAlign = "center";
+can.font = "7px arial";
+can.fillStyle = "rgb(0, 0, 0)";
+can.fillText(valueToTenStr(leBot.food), 94 + boxX + 39, boxY + 86 + 64);*/
+//can.fillStyle = "rgb(255, 255, 255)";
+//can.fillText(valueToTenStr(leBot.food), 94 + boxX + 38, boxY + 86 + 58 + 5.5);
+can.restore();
+
+/*if (leBot.foodSaturation > 0) {
+    leBot.foodSaturation -= 0.01;
+} else {
+    leBot.food -= 0.01;
+}
+if (leBot.inWater) {
+    leBot.oxygenLevel -= 0.025;
+} else if (leBot.oxygenLevel < 20) {
+    leBot.oxygenLevel += 0.1;
+} else {
+    leBot.oxygenLevel = 20;
+}
+leBot.health -= 0.01;*/
+if (leBot.food < 0) {leBot.food = 0;}
+if (leBot.foodSaturation < 0) {leBot.foodSaturation = 0;}
+if (leBot.health < 0) {leBot.health = 0;}
+if (leBot.oxygenLevel < 0) {leBot.oxygenLevel = 0;}
+
+can.font = "7px arial";
+//can.textAlign = "end";
+    
+//if (keysDown[69]) {boxH += 19;}
+    if (containerName == "Inventory") {
+can.fillStyle = "rgb(255, 255, 255)";
+can.fillRect(boxX + leBot.quickBarSlot * 19, -(172-boxH) + boxY + 151, 20, 20);
+for (var i = 0; i < 36; i++) {
+    itemBox(9+i, boxX + 1 + (i * 19) - Math.floor(i / 9) * 9*19, -(172-boxH) + boxY + 76 + (i >= 27) * 19 + Math.floor((i / 9)) * 19);
+    //can.fillText(inventoryItemNames[i][0].split(","
+}
+
+itemBox(45, boxX + 77, boxY+57);
+itemBox(5, boxX+1, boxY, "_helmet");
+itemBox(6, boxX+1, boxY+19, "_chestplate");
+itemBox(7, boxX+1, boxY+38, "_leggings");
+itemBox(8, boxX+1, boxY+57, "_boots");
+
+itemBox(1, boxX+96, boxY+19);
+itemBox(2, boxX+115, boxY+19);
+itemBox(3, boxX+96, boxY+38);
+itemBox(4, boxX+115, boxY+38);
+itemBox(0, boxX+153, boxY+29);
+    
+for (var i = 46; i < inventoryItemNames.length; i++) {
+    itemBox(i, ((i - 38) % 15) * 19, -(172-boxH) + boxY + 180 + Math.floor((i - 38) / 15) * 19);
+}
+    }
+
+if (inventoryItemNames[-1] != null) {
+    document.getElementById("canvas").style.cursor = "none";
+    renderItem(inventoryItemNames[-1][0].split(" ")[0], (mouseX / 2) - 8, (mouseY / 2) - 8, 1);
+    if (inventoryItemNames[-1][0].split(" ")[1]) {
+        can.textAlign = "right";
+        can.fillStyle = "rgb(0, 0, 0)";
+        can.fillText(inventoryItemNames[-1][0].split(" ")[1], 8+(mouseX/2)+1, 8+(mouseY/2)+1);
+        can.fillStyle = "rgb(255, 255, 255)";
+        can.fillText(inventoryItemNames[-1][0].split(" ")[1], 8+(mouseX/2), 8+(mouseY/2));
+    }
+    
+    
+    renderItem(inventoryItemNames[-1][0].split(" ")[0], 152+(boxX), (boxY), 1);
+    if (inventoryItemNames[-1][0].split(" ")[1]) {
+        can.textAlign = "right";
+        can.fillStyle = "rgb(0, 0, 0)";
+        can.fillText(inventoryItemNames[-1][0].split(" ")[1], 152+(boxX+16)+1, 16+(boxY)+1);
+        can.fillStyle = "rgb(255, 255, 255)";
+        can.fillText(inventoryItemNames[-1][0].split(" ")[1], 152+(boxX+16), 16+(boxY));
+    }
+} else {
+    document.getElementById("canvas").style.cursor = "auto";
+}
+if (cursorText.length > 0) {
+    //document.getElementById("canvas").style.cursor = "none";
+    can.textAlign = "left";
+    can.fillStyle = "rgb(0, 0, 0)";
+    can.fillText(cursorText, mouseX / 2 + 1, mouseY / 2 + 1);
+    can.fillStyle = "rgb(255, 255, 255)";
+    can.fillText(cursorText, mouseX / 2, mouseY / 2);
+} else {
+    //document.getElementById("canvas").style.cursor = "auto";
+}
+    
+can.restore();
+clicked = false;
+if (toReset) {
+    resetInventory(leBot);
+    optimizeInventory(leBot);
+    scoreInventory(leBot);
+}
+if (toSwap.length >= 3) {
+    clickRequests.push(toSwap[0], toSwap[1], toSwap[0]);
+}
+if (toSwap.length > 0 && false) {
+    if (inventoryItemNames[toSwap[0]]) {
+        toSwap.push(JSON.parse(JSON.stringify(inventoryItemNames[toSwap[0]])));
+    } else {
+        toSwap.push(null);
+    }
+    inventoryItemNames[toSwap[0]] = inventoryItemNames[toSwap[1]];
+    inventoryItemNames[toSwap[1]] = toSwap[2];
+}
+    
+toReset = false;
+toSwap = [];
+keysDown = [];
+//can.drawImage(document.getElementById("canvas"), 0, 0, 200, 200, 0, 0, 400, 400);
+//requestAnimationFrame(run);
+};
+setInterval(run, 50);
+//run();
+</script>
+    
+</html>

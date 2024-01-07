@@ -270,12 +270,11 @@ function makeBots(cbtm) {
         "cursorBlock":null,
 
         "bucketTask":{
-            x:0,
-            y:0,
-            z:0,
-            bucket:null,//null, water, lava, empty
+            pos:new Vec3(0, 0, 0),
+            bucket:"water_bucket",//null, water, lava, empty
             pickupAfterDone:null,//null, water, lava
-            
+            equipDelay:-10,
+            blockFunc:function(bot) {bot.dunder.bucketTask.pos = null;},
         },
 
         //pathfinding
@@ -345,7 +344,7 @@ function makeBots(cbtm) {
         "pathfinderOptions":{
             "maxFall":3,
             "maxFallClutch":256,
-            "canClutch":false,
+            "canClutch":!false,
             "sprint":true,
             "parkour":true,
             "placeBlocks":true,//(!!!) disable these for testing later!
@@ -465,9 +464,13 @@ setTimeout(function() {makeBots(currentBotToMake);}, 100);
 
 //console.log(bots);
 
-//TODO: make blaze goal closer to blaze when blaze is higher in the air
+/*TODO:
+make blaze goal closer to blaze when blaze is higher in the air/closer to zombies when on hills
+maintain distance against skeletons/strays holding melee weapons
+use shields against hoglins/zoglins/ravagers
+*/
 //(!!!) fix blaze fireball position prediction
-var pveThreatList = {"drowned":3.0, "enderman":3.0,"shulker":2.0,"shulker_bullet":3.0, "piglin_brute":3.0, "vindicator":3.0, "endermite":2.0,"silverfish":2.0, "ravager":3.0,"hoglin":1.0,"magma_cube":3.0,"slime":3.0,"zoglin":1.0,"skeleton":0.5,"stray":0.1, "pillager":0.1, "blaze":2.0, "zombified_piglin":3.0, "piglin":1.0, "illusioner":0.1, "vex":3.5, "fireball":4.5, "phantom":3.5,"zombie":3.0,"husk":3.0,"polar_bear":3.0,"zombie_villager":3.0,"spider":3.0,"cave_spider":3.0,"creeper":3.0, "warden":3.0, "guardian":0.1, "elder_guardian":0.1, "evoker":0.5, "arrow":0.1, "small_fireball":0.1};
+var pveThreatList = {"drowned":3.0, "enderman":3.0,"shulker":2.0,"shulker_bullet":3.0, "wither_skeleton":3.0, "piglin_brute":3.0, "vindicator":3.0, "endermite":2.0,"silverfish":2.0, "ravager":3.0,"hoglin":1.0,"magma_cube":3.0,"slime":3.0,"zoglin":1.0,"skeleton":0.5,"stray":0.1, "pillager":0.1, "blaze":2.0, "zombified_piglin":3.0, "piglin":1.0, "illusioner":0.1, "vex":3.5, "fireball":4.5, "phantom":3.5,"zombie":3.0,"husk":3.0,"polar_bear":3.0,"zombie_villager":3.0,"spider":3.0,"cave_spider":3.0,"creeper":3.0, "warden":3.0, "guardian":0.1, "elder_guardian":0.1, "evoker":0.5, "arrow":0.1, "small_fireball":0.1, "pig":1.0};
 var myParticleDebugTimer = 0;
 function runBot(bot) {
     bot.physics.waterInertia = 0.8;
@@ -631,7 +634,7 @@ for (var i in bot.entities) {
         var entityDist = dist3d(bot.entities[i].position.x, bot.entities[i].position.y, bot.entities[i].position.z, bot.entity.position.x, bot.entity.position.y, bot.entity.position.z);
         if (entityDist > 16) {continue;}
         //if (bot.entities[i].name == "slime" && bot.entities[i].metadata[16] > 1) {console.log(bot.entities[i].metadata);}
-        if (bot.entities[i].name == "drowned" || bot.entities[i].name == "enderman" && (bot.entities[i].isPassenger || bot.entities[i].metadata[17] == true || bot.entities[i].metadata[18] == true) || bot.entities[i].name == "pufferfish" || bot.entities[i].name == "shulker" || (bot.entities[i].name == "arrow" || bot.entities[i].name == "small_fireball") && projectileIsThreat(bot, bot.entities[i]) || bot.entities[i].name == "shulker_bullet" || bot.entities[i].name == "blaze" || (bot.entities[i].name == "piglin" || bot.entities[i].name == "zombified_piglin") && bot.entities[i].metadata[15] == 4 || bot.entities[i].name == "pillager" || bot.entities[i].name == "evoker" || bot.entities[i].name == "witch" || bot.entities[i].name == "piglin_brute" || bot.entities[i].name == "vindicator" || bot.entities[i].name == "silverfish" || bot.entities[i].name == "endermite" || bot.entities[i].name == "magma_cube" || bot.entities[i].name == "slime" && (bot.entities[i].metadata[16] > 1 || entityDist < 1.0) || bot.entities[i].name == "wither_skeleton" || bot.entities[i].name == "hoglin" || bot.entities[i].name == "zoglin" || bot.entities[i].name == "ravager" || bot.entities[i].name == "skeleton" || bot.entities[i].name == "stray" || bot.entities[i].name == "illusioner" || bot.entities[i].name == "fireball" || entityDist < 8 && (bot.entities[i].name == "phantom" || bot.entities[i].name == "vex") || bot.entities[i].name == "zombie" || bot.entities[i].name == "polar_bear" || bot.entities[i].name == "husk" || bot.entities[i].name == "zombie_villager" || bot.entities[i].name == "spider" || bot.entities[i].name == "cave_spider" || bot.entities[i].name == "creeper" || bot.entities[i].name == "warden" || bot.entities[i].name == "guardian" || bot.entities[i].name == "elder_guardian") {
+        if (bot.entities[i].name == "drowned" || bot.entities[i].name == "enderman" && (bot.entities[i].isPassenger || bot.entities[i].metadata[17] == true || bot.entities[i].metadata[18] == true) || bot.entities[i].name == "pufferfish" || bot.entities[i].name == "shulker" || (bot.entities[i].name == "arrow" || bot.entities[i].name == "small_fireball") && projectileIsThreat(bot, bot.entities[i]) || bot.entities[i].name == "shulker_bullet" || bot.entities[i].name == "blaze" || (bot.entities[i].name == "piglin" || bot.entities[i].name == "zombified_piglin") && bot.entities[i].metadata[15] == 4 || bot.entities[i].name == "pillager" || bot.entities[i].name == "evoker" || bot.entities[i].name == "witch" || bot.entities[i].name == "piglin_brute" || bot.entities[i].name == "vindicator" || bot.entities[i].name == "silverfish" || bot.entities[i].name == "endermite" || bot.entities[i].name == "magma_cube" || bot.entities[i].name == "slime" && (bot.entities[i].metadata[16] > 1 || entityDist < 1.0) || bot.entities[i].name == "wither_skeleton" || bot.entities[i].name == "hoglin" || bot.entities[i].name == "zoglin" || bot.entities[i].name == "ravager" || bot.entities[i].name == "skeleton" || bot.entities[i].name == "stray" || bot.entities[i].name == "illusioner" || bot.entities[i].name == "fireball" || entityDist < 8 && (bot.entities[i].name == "phantom" || bot.entities[i].name == "vex") || bot.entities[i].name == "zombie" || bot.entities[i].name == "polar_bear" || bot.entities[i].name == "husk" || bot.entities[i].name == "zombie_villager" || bot.entities[i].name == "spider" || bot.entities[i].name == "cave_spider" || bot.entities[i].name == "creeper" || bot.entities[i].name == "warden" || bot.entities[i].name == "guardian" || bot.entities[i].name == "elder_guardian" || bot.entities[i].name == "pig") {
             threatList.push([bot.entities[i], dist3d(bot.entity.position.x, bot.entity.position.y, bot.entity.position.z, bot.entities[i].position.x, bot.entities[i].position.y, bot.entities[i].position.z),
             pveThreatList[bot.entities[i].name]]);//bot, distance, threatCircle
             //console.log(bot.entities[i].velocity);
@@ -696,6 +699,113 @@ for (var i in bot.entities) {
         }
     } else if (bot.dunder.masterState == "pathfinding2") {
         bot.dunder.state = "pathfinding2";
+    } else if (bot.dunder.masterState == "bucketTest") {
+        bot.dunder.state = "bucketTest";
+        bot.dunder.looktimer -= (bot.dunder.looktimer > -10);
+        bot.dunder.bucketTask.equipDelay -= (bot.dunder.bucketTask.equipDelay > -10);
+        bot.dunder.bucketTask.blockFunc(bot);
+        //
+
+        //bot.dunder.lookY = bot.entity.position.y - 20;
+        /*if (bot.dunder.onFire) {
+            var fireCandidates = [false, false, false, false];
+            for (var i = 0; i < 23; i++) {
+                if (Math.floor(bot.entity.position.y) - i <= -64) {
+                    i = 23;
+                    break;
+                }
+                if (!fireCandidates[0] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001))) {
+                    fireCandidates[0] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001)));
+                }
+                if (!fireCandidates[1] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001))) {
+                    fireCandidates[1] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001)));
+                }
+                if (!fireCandidates[2] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001))) {
+                    fireCandidates[2] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001)));
+                }
+                if (!fireCandidates[3] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.301),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001))) {//(!!!)Probably need to account for negatives or something
+                    fireCandidates[3] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001)));
+                }
+            }
+            var myFireCandidate = -1;
+            for (var i = 0; i < fireCandidates.length; i++) {
+                if (fireCandidates[i] && (myFireCandidate == -1 || fireCandidates[i].position.y > fireCandidates[myFireCandidate].position.y)) {
+                    myFireCandidate = i;
+                }
+            }
+            if (myFireCandidate > -1 && fireCandidates[myFireCandidate]) {
+                 myFireCandidate = fireCandidates[myFireCandidate];
+                 bot.dunder.bucketTask.pos = myFireCandidate.position.offset(0, 0, 0);
+            }
+        }*/
+            //do bucket task stuff
+        if (!bot.entity.onGround || bot.dunder.onFire) {
+                if (bot.dunder.bucketTask.pos) {
+                    if (bot.dunder.bucketTask.equipDelay < 0) {
+                        equipItem(bot, [bot.dunder.bucketTask.bucket]);
+                        bot.dunder.bucketTask.equipDelay = 20;
+                    }
+                    bot.lookAt(bot.dunder.bucketTask.pos.offset(0.5, 0, 0.5), true);
+                    //console.log(bot.entity.pitch + ", " + bot.dunder.cursorBlock);
+                }
+                if (bot.dunder.cursorBlock && bot.dunder.bucketTask.pos) {
+                    console.log("e " + (bot.dunder.bucketTask.pos) + "&&" + (bot.dunder.cursorBlock && bot.dunder.cursorBlock.position.equals(bot.dunder.bucketTask.pos)) + "&&" + (dist3d(0, (bot.entity.position.y + 1.75), 0, 0, bot.dunder.cursorBlock.position.y, 0)) + "&&" + (bot.entity.heldItem) + "&&" + (bot.entity.heldItem && bot.entity.heldItem.name == bot.dunder.bucketTask.bucket) + "&&" +  (bot.dunder.looktimer < 0));
+                }
+                if (bot.dunder.bucketTask.pos && bot.dunder.cursorBlock && bot.dunder.cursorBlock.position.equals(bot.dunder.bucketTask.pos) && dist3d(0, (bot.entity.position.y + 1.65), 0, 0, bot.dunder.cursorBlock.position.y, 0) <= 4.5 && bot.entity.heldItem && (bot.entity.heldItem && bot.entity.heldItem.name == bot.dunder.bucketTask.bucket) && bot.dunder.looktimer < 0) {
+                    //bot.dunder.botMove.sneak = true;
+                    bot.activateItem(false);
+                    bot.swingArm();
+                    bot.dunder.looktimer = 1;
+                    console.log("clutch pls");
+                } //else if (!bot.dunder.bucketTask.pos) {console.log("no blocks");}
+        } else if (bot.entity.heldItem && bot.entity.heldItem.name == 'bucket') {
+            var waterBlock = bot.findBlock({
+                matching: (block) => (block.stateId === 80),//thank you u9g
+                maxDistance: 7,
+            });
+            var raycastedLiquid = null;
+            if (waterBlock) {
+                //console.log(waterBlock.position.offset(0.5, 0.5, 0.5).minus(bot.entity.position.offset(0, 1.65, 0)).normalize() + "\n" + (new Vec3(-Math.sin(bot.entity.yaw) * Math.cos(bot.entity.pitch), Math.sin(bot.entity.pitch), -Math.cos(bot.entity.pitch) * Math.cos(bot.entity.yaw)).normalize()));
+
+                raycastedLiquid = bot.world.raycast(bot.entity.position.offset(0, 1.65, 0), new Vec3(-Math.sin(bot.entity.yaw) * Math.cos(bot.entity.pitch), Math.sin(bot.entity.pitch), -Math.cos(bot.entity.pitch) * Math.cos(bot.entity.yaw)).normalize(), 5, function(leBlock) {
+                    //console.log(leBlock.name);
+                    if (leBlock && leBlock.name == "water" && leBlock.stateId == 80) {
+                        //console.log("ye!" + leBlock.name);
+                        return true;
+                    }
+                });
+                //if (raycastedLiquid) {console.log(raycastedLiquid.name);}
+                //bot.lookAt(waterBlock.position.offset(0.5, 0.5, 0.5), 100);
+            }
+            if (waterBlock) {
+                bot.lookAt(waterBlock.position.offset(0.5, 0.5, 0.5), 100, function() {console.log("e");});
+            }
+            //console.log(bot.entity.pitch);
+            if (/*bot.dunder.cursorBlock*/waterBlock && raycastedLiquid && raycastedLiquid.position.equals(waterBlock.position) && bot.entity.heldItem && (bot.entity.heldItem.name == 'bucket') && bot.dunder.looktimer < 0) {
+                bot.activateItem(false);
+                bot.swingArm();
+                bot.dunder.looktimer = 1;
+            }
+        } else {
+            bot.dunder.masterState = "idle";
+        }
+        bot.dunder.bucketTask.pos = null;
     } else if (bot.dunder.masterState == "mining") {
         bot.dunder.state = "mining";
         if (bot.dunderTaskDetails.x != null && blockSolid(bot, bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z) && (dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) > 5 || !bot.entity.onGround || !bot.dunderTaskDetails.failedPathfind && !visibleFromPos(bot, bot.entity.position, new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z)) && !(dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) <= 5 && bot.dunder.movesToGo.length <= 1 && bot.dunder.movesToGo[0] && visibleFromPos(bot, new Vec3(bot.dunder.movesToGo[0].x, bot.dunder.movesToGo[0].y, bot.dunder.movesToGo[0].z), new Vec3(bot.dunderTaskDetails.x, bot.dunderTaskDetails.y, bot.dunderTaskDetails.z))) )) {
@@ -844,8 +954,16 @@ for (var i in bot.entities) {
             }*/
     } else if (bot.isSleeping) {
         bot.dunder.state = "sleeping";
-    } else if (bot.dunder.onfire > 0) {
-        bot.dunder.state = "on_fire";
+    } else if (bot.dunder.onfire > 0 && bot.dunder.masterState != "bucketTest") {
+        bot.dunder.bucketTask.pos = null;
+        getHighestBlockBelow(bot);
+        if (bot.dunder.bucketTask.pos) {
+            equipItem(bot, ["water_bucket"]);
+            bot.dunder.masterState = "bucketTest";
+            bot.dunder.state = "bucketTest";
+            bot.dunder.bucketTask.blockFunc = getHighestBlockBelow;
+            bot.dunder.bucketTask.bucket = "water_bucket";
+        }
     } else if (closeCommander && dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, closeCommander.position.x, closeCommander.position.y, closeCommander.position.z) > 16) {
         bot.dunder.state = "follow";
     } else if (myThreat < threatList.length && threatList[myThreat]) {
@@ -856,108 +974,9 @@ for (var i in bot.entities) {
         bot.dunder.state = "follow";
     } else if (bot.entity.onGround) {
         bot.dunder.state = "idle";
-    }
-    
-    //State handler
-    /*
-        TODO FOR FIRE:
-        1. place water on best block(i.e. not one lower), mostly done, need to do lava and fire checks
-        2. allow bot to attempt to find water and traverse to it either with pathfinding or simualtejump
-    */
-    var waterBlock = bot.findBlock({
-        matching: (block) => (block.stateId === 80),//thank you u9g
-        maxDistance: 5,
-    });
-    var raycastedLiquid = null;
-    if (waterBlock) {
-        //console.log(waterBlock.position.offset(0.5, 0.5, 0.5).minus(bot.entity.position.offset(0, 1.65, 0)).normalize() + "\n" + (new Vec3(-Math.sin(bot.entity.yaw) * Math.cos(bot.entity.pitch), Math.sin(bot.entity.pitch), -Math.cos(bot.entity.pitch) * Math.cos(bot.entity.yaw)).normalize()));
+    }//buckettask old leftovers go here
 
-        raycastedLiquid = bot.world.raycast(bot.entity.position.offset(0, 1.65, 0), new Vec3(-Math.sin(bot.entity.yaw) * Math.cos(bot.entity.pitch), Math.sin(bot.entity.pitch), -Math.cos(bot.entity.pitch) * Math.cos(bot.entity.yaw)).normalize(), 5, function(leBlock) {
-            //console.log(leBlock.name);
-            if (leBlock && leBlock.name == "water") {
-                //console.log("ye!" + leBlock.name);
-                return true;
-            }
-        });
-        //if (raycastedLiquid) {console.log(raycastedLiquid.name);}
-        //bot.lookAt(waterBlock.position.offset(0.5, 0.5, 0.5), 100);
-    }
-
-    bot.dunder.looktimer--;
-    if (bot.heldItem && bot.heldItem.name == "bucket" && waterBlock && bot.entity.velocity.y > -0.3518) {
-            equipItem(bot, ["bucket"]);
-            //bot.lookAt(bot.entity.position, 100);
-            if (waterBlock) {
-                bot.lookAt(waterBlock.position.offset(0.5, 0.5, 0.5), 100, function() {console.log("e");});
-                //console.log(JSON.stringify(waterBlock));
-            }
-            //console.log(bot.entity.pitch);
-            if (/*bot.dunder.cursorBlock*/waterBlock && raycastedLiquid && raycastedLiquid.position.equals(waterBlock.position) && bot.entity.heldItem && (bot.entity.heldItem.name == 'bucket') && bot.dunder.looktimer < 0) {
-                bot.activateItem(false);
-                bot.swingArm();
-                bot.dunder.looktimer = 1;
-            }
-    } else if (bot.dunder.state == "on_fire" && hasItem(bot, ["water_bucket"/*, "axolotl_bucket"*/])) {
-        if (bot.dunder.onFire && bot.entity.onGround) {
-            var fireCandidates = [false, false, false, false];
-            for (var i = 0; i < 3; i++) {
-                if (Math.floor(bot.entity.position.y) - i <= -64) {
-                    i = 3;
-                    break;
-                }
-                if (!fireCandidates[0] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
-                             Math.floor(bot.entity.position.y) - i,
-                             Math.floor(bot.entity.position.z - 0.3001))) {
-                    fireCandidates[0] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
-                             Math.floor(bot.entity.position.y) - i,
-                             Math.floor(bot.entity.position.z - 0.3001)));
-                }
-                if (!fireCandidates[1] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.3001),
-                             Math.floor(bot.entity.position.y) - i,
-                             Math.floor(bot.entity.position.z - 0.3001))) {
-                    fireCandidates[1] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
-                             Math.floor(bot.entity.position.y) - i,
-                             Math.floor(bot.entity.position.z - 0.3001)));
-                }
-                if (!fireCandidates[2] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
-                             Math.floor(bot.entity.position.y) - i,
-                             Math.floor(bot.entity.position.z + 0.3001))) {
-                    fireCandidates[2] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
-                             Math.floor(bot.entity.position.y) - i,
-                             Math.floor(bot.entity.position.z + 0.3001)));
-                }
-                if (!fireCandidates[3] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.301),
-                             Math.floor(bot.entity.position.y) - i,
-                             Math.floor(bot.entity.position.z + 0.3001))) {//(!!!)Probably need to account for negatives or something
-                    fireCandidates[3] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
-                             Math.floor(bot.entity.position.y) - i,
-                             Math.floor(bot.entity.position.z + 0.3001)));
-                }
-            }
-            var myFireCandidate = -1;
-            for (var i = 0; i < fireCandidates.length; i++) {
-                if (fireCandidates[i] && (myFireCandidate == -1 || fireCandidates[i].position.y > fireCandidates[myFireCandidate].position.y)) {
-                    myFireCandidate = i;
-                }
-            }
-
-            if (myFireCandidate > -1 && fireCandidates[myFireCandidate]) {
-                myFireCandidate = fireCandidates[myFireCandidate];
-            }
-
-            equipItem(bot, ["water_bucket"]);
-            if (myFireCandidate) {
-                bot.lookAt(myFireCandidate.position.offset(0.5, 0, 0.5), 100);
-            }
-            //console.log(bot.entity.pitch);
-            if (myFireCandidate && bot.dunder.cursorBlock && bot.dunder.cursorBlock.position.equals(myFireCandidate.position) && bot.entity.heldItem && (bot.entity.heldItem.name == 'water_bucket') && bot.dunder.looktimer < 0) {
-                bot.activateItem(false);
-                bot.swingArm();
-                bot.dunder.looktimer = 1;
-                console.log("cursorblock: " + bot.dunder.cursorBlock.position);
-            } else if (!myFireCandidate) {console.log("no blocks");}
-        }
-    } else if (bot.dunder.state == "idle") {
+    if (bot.dunder.state == "idle") {
             bot.dunder.goal.reached = true;
             bot.dunder.movesToGo.splice(0, bot.dunder.movesToGo.length);
             //console.log(bot.dunder.movesToGo);
@@ -1053,13 +1072,16 @@ for (var i in bot.entities) {
                         moveInDir(bot, new PlayerState(bot, {forward: false, back: true, left: false, right: false, jump: false,sprint: false,sneak: false,}));
                     }
                     //console.log(target.isPassenger);
-                    if (getHitTimes(bot, target.uuid) <= 0 && botCanHit(bot, target) <= 3.0 && bot.dunder.shieldTimer <= 0 && (bot.dunder.attackTimer >= getAttackSpeed(getHeldItem(bot)) || targetDistXZ < threatList[myThreat][2] * 0.65)) {
+                    if ((target.name != "pig" || parseEntityAnimation("pig", target.metadata[0])[0]) && getHitTimes(bot, target.uuid) <= 0 && botCanHit(bot, target) <= 3.0 && bot.dunder.shieldTimer <= 0 && (bot.dunder.attackTimer >= getAttackSpeed(getHeldItem(bot)) || targetDistXZ < threatList[myThreat][2] * 0.65)) {
                         if (bot.entity.velocity.y >= -0.1) {
                             //bot.setControlState("sprint", false);
                         } else {
                             //bot.setControlState("sprint", true);
                         }
                         attackEntity(bot, target);
+                        console.log(target.name + ", " + JSON.stringify(target.metadata));
+                    } else if (target.name == "pig" && !parseEntityAnimation("pig", target.metadata[0])[0]) {
+                        console.log("set on fire plz");
                     } else {
                         bot.setControlState("sprint", true);
                     }
@@ -1101,3 +1123,109 @@ for (var i in bot.entities) {
 
     bot.setControlState("sneak", bot.dunder.controls.sneak);
 };
+
+
+//buckettask old leftovers
+if (false) {
+   
+    //State handler
+    /*
+        TODO FOR FIRE:
+        1. place water on best block(i.e. not one lower), mostly done, need to do lava and fire checks
+        2. allow bot to attempt to find water and traverse to it either with pathfinding or simualtejump
+    */
+    var waterBlock = bot.findBlock({
+        matching: (block) => (block.stateId === 80),//thank you u9g
+        maxDistance: 5,
+    });
+    var raycastedLiquid = null;
+    if (waterBlock) {
+        //console.log(waterBlock.position.offset(0.5, 0.5, 0.5).minus(bot.entity.position.offset(0, 1.65, 0)).normalize() + "\n" + (new Vec3(-Math.sin(bot.entity.yaw) * Math.cos(bot.entity.pitch), Math.sin(bot.entity.pitch), -Math.cos(bot.entity.pitch) * Math.cos(bot.entity.yaw)).normalize()));
+
+        raycastedLiquid = bot.world.raycast(bot.entity.position.offset(0, 1.65, 0), new Vec3(-Math.sin(bot.entity.yaw) * Math.cos(bot.entity.pitch), Math.sin(bot.entity.pitch), -Math.cos(bot.entity.pitch) * Math.cos(bot.entity.yaw)).normalize(), 5, function(leBlock) {
+            //console.log(leBlock.name);
+            if (leBlock && leBlock.name == "water") {
+                //console.log("ye!" + leBlock.name);
+                return true;
+            }
+        });
+        //if (raycastedLiquid) {console.log(raycastedLiquid.name);}
+        //bot.lookAt(waterBlock.position.offset(0.5, 0.5, 0.5), 100);
+    }
+
+    bot.dunder.looktimer--;
+    if (bot.heldItem && bot.heldItem.name == "bucket" && waterBlock && bot.entity.velocity.y > -0.3518) {
+            equipItem(bot, ["bucket"]);
+            //bot.lookAt(bot.entity.position, 100);
+            if (waterBlock) {
+                bot.lookAt(waterBlock.position.offset(0.5, 0.5, 0.5), 100, function() {console.log("e");});
+                //console.log(JSON.stringify(waterBlock));
+            }
+            //console.log(bot.entity.pitch);
+            if (/*bot.dunder.cursorBlock*/waterBlock && raycastedLiquid && raycastedLiquid.position.equals(waterBlock.position) && bot.entity.heldItem && (bot.entity.heldItem.name == 'bucket') && bot.dunder.looktimer < 0) {
+                bot.activateItem(false);
+                bot.swingArm();
+                bot.dunder.looktimer = 1;
+            }
+    } else if (bot.dunder.state == "on_fire" && hasItem(bot, [bot.dunder.bucketTask.bucket/*, "axolotl_bucket"*/])) {
+        if (bot.dunder.onFire && bot.entity.onGround) {
+            var fireCandidates = [false, false, false, false];
+            for (var i = 0; i < 3; i++) {
+                if (Math.floor(bot.entity.position.y) - i <= -64) {
+                    i = 3;
+                    break;
+                }
+                if (!fireCandidates[0] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001))) {
+                    fireCandidates[0] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001)));
+                }
+                if (!fireCandidates[1] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001))) {
+                    fireCandidates[1] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z - 0.3001)));
+                }
+                if (!fireCandidates[2] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001))) {
+                    fireCandidates[2] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001)));
+                }
+                if (!fireCandidates[3] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.301),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001))) {//(!!!)Probably need to account for negatives or something
+                    fireCandidates[3] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
+                             Math.floor(bot.entity.position.y) - i,
+                             Math.floor(bot.entity.position.z + 0.3001)));
+                }
+            }
+            var myFireCandidate = -1;
+            for (var i = 0; i < fireCandidates.length; i++) {
+                if (fireCandidates[i] && (myFireCandidate == -1 || fireCandidates[i].position.y > fireCandidates[myFireCandidate].position.y)) {
+                    myFireCandidate = i;
+                }
+            }
+
+            if (myFireCandidate > -1 && fireCandidates[myFireCandidate]) {
+                myFireCandidate = fireCandidates[myFireCandidate];
+            }
+
+            equipItem(bot, [bot.dunder.bucketTask.bucket]);
+            if (myFireCandidate) {
+                bot.lookAt(myFireCandidate.position.offset(0.5, 0, 0.5), 100);
+            }
+            //console.log(bot.entity.pitch);
+            if (myFireCandidate && bot.dunder.cursorBlock && bot.dunder.cursorBlock.position.equals(myFireCandidate.position) && bot.entity.heldItem && (bot.entity.heldItem.name == bot.dunder.bucketTask.bucket) && bot.dunder.looktimer < 0) {
+                bot.activateItem(false);
+                bot.swingArm();
+                bot.dunder.looktimer = 1;
+                console.log("cursorblock: " + bot.dunder.cursorBlock.position);
+            } else if (!myFireCandidate) {console.log("no blocks");}
+        }
+    }
+}

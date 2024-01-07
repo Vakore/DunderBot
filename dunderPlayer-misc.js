@@ -167,9 +167,15 @@ function parseEntityAnimation(entityType, metanum) {
     return returner;
 };
 
-function botCanSee(bot, entity) {
+function botCanSee(bot, entity, node) {
     //console.log(entity.position.offset(0, entity.height / 2, 0).minus(bot.entity.position.offset(0, 1.6, 0)).normalize());
-    var theRaycast = bot.world.raycast(bot.entity.position.offset(0, 1.6, 0), entity.position.offset(0, entity.height / 2, 0).minus(bot.entity.position.offset(0, 1.6, 0)).normalize(), 16);
+    let theRaycast = null;
+    if (node) {
+        let dupeWorld = JSON.parse(JSON.stringify(bot.world));
+        theRaycast = dupeWorld.raycast(bot.entity.position.offset(0, 1.6, 0), entity.position.offset(0, entity.height / 2, 0).minus(bot.entity.position.offset(0, 1.6, 0)).normalize(), 16);
+    } else {
+        theRaycast = bot.world.raycast(bot.entity.position.offset(0, 1.6, 0), entity.position.offset(0, entity.height / 2, 0).minus(bot.entity.position.offset(0, 1.6, 0)).normalize(), 16);
+    }
     var returner = true;
     if (theRaycast && dist3d(bot.entity.position.x, bot.entity.position.y, bot.entity.position.z, theRaycast.intersect.x, theRaycast.intersect.y, theRaycast.intersect.z) <
         dist3d(bot.entity.position.x, bot.entity.position.y, bot.entity.position.z, entity.position.x, entity.position.y, entity.position.z) - 0.5) {
@@ -453,9 +459,39 @@ function getEntityFloorPos(bot, position, obj) {
     return obj;
 };
 
-function visibleFromPos(bot, pos1, pos2) {
+function visibleFromPos(bot, pos1, pos2, zeNode) {
     //console.log(entity.position.offset(0, entity.height / 2, 0).minus(bot.entity.position.offset(0, 1.6, 0)).normalize());
-    var theRaycast = bot.world.raycast(pos1.offset(0, 1.6, 0), pos2.offset(0.5, 0.5, 0.5).minus(pos1.offset(0, 1.6, 0)).normalize(), 16);
+    let theRaycast = null;
+    if (false && zeNode) {
+        console.log("hi");
+        let dupeWorld = JSON.parse(JSON.stringify(bot.world));
+        console.log("uh");
+        /*while (zeNode.parent) {
+            for (var i = 0; i < zeNode.brokenBlocks.length; i++) {
+                dupeWorld.setBlock(new Vec3(zeNode.brokenBlocks[i][0], zeNode.brokenBlocks[i][1], zeNode.brokenBlocks[i][2]), new Block(registry.blocksByName.air, registry.biomesByName.plains, 0));
+            }
+            zeNode = zeNode.parent;
+        console.log("thingamajig2");
+        }*/
+        theRaycast = dupeWorld.raycast(pos1.offset(0, 1.6, 0), pos2.offset(0.5, 0.5, 0.5).minus(pos1.offset(0, 1.6, 0)).normalize(), 16);
+        console.log("thingamajig");
+    } else {
+        theRaycast = bot.world.raycast(pos1.offset(0, 1.6, 0), pos2.offset(0.5, 0.5, 0.5).minus(pos1.offset(0, 1.6, 0)).normalize(), 16);
+        //It would be more efficient to modify the iterator or whatever in prismarine-world, however I'm too lazy to implement that
+        while (zeNode && theRaycast.position.x != pos2.x && theRaycast.position.y != pos2.y && theRaycast.position.z != pos2.z) {
+            let walkThrough = 1;
+            for (var i = 0; i < zeNode.brokenBlocks.length; i++) {
+                if (zeNode.brokenBlocks[i][0] == theRaycast.position.x && zeNode.brokenBlocks[i][1] == theRaycast.position.y && zeNode.brokenBlocks[i][2] == theRaycast.position.z) {
+                    walkThrough = 0;
+                    i = zeNode.brokenBlocks.length;
+                    theRaycast = bot.world.raycast(theRaycast.position, pos2.offset(0.5, 0.5, 0.5).minus(theRaycast.position).normalize(), 16);
+                }
+            }
+            if (walkThrough == 0) {
+                zeNode = false;
+            }
+        }
+    }
     var returner = false;
     //console.log(theRaycast.position + ", " + pos2);
     if (theRaycast && theRaycast.intersect && /*theRaycast.position.x == pos2.x && theRaycast.position.y == pos2.y && theRaycast.position.z == pos2.z*/
@@ -739,4 +775,56 @@ function dist3d(x1, y1, z1, x2, y2, z2) {
 };
 function distMan3d(x1, y1, z1, x2, y2, z2) {//Ideally a cheaper function
     return Math.abs(x2 - x1) + Math.abs(y2 - y1) + Math.abs(z2 - z1);
+};
+
+
+
+//bucket task stuff
+function getHighestBlockBelow(bot) {
+                var fireCandidates = [false, false, false, false];
+                for (var i = 0; i < 23; i++) {
+                    if (Math.floor(bot.entity.position.y) - i <= -64) {
+                        i = 23;
+                        break;
+                    }
+                    if (!fireCandidates[0] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
+                                 Math.floor(bot.entity.position.y) - i,
+                                 Math.floor(bot.entity.position.z - 0.3001))) {
+                        fireCandidates[0] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
+                                 Math.floor(bot.entity.position.y) - i,
+                                 Math.floor(bot.entity.position.z - 0.3001)));
+                    }
+                    if (!fireCandidates[1] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.3001),
+                                 Math.floor(bot.entity.position.y) - i,
+                                 Math.floor(bot.entity.position.z - 0.3001))) {
+                        fireCandidates[1] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
+                                 Math.floor(bot.entity.position.y) - i,
+                                 Math.floor(bot.entity.position.z - 0.3001)));
+                    }
+                    if (!fireCandidates[2] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
+                                 Math.floor(bot.entity.position.y) - i,
+                                 Math.floor(bot.entity.position.z + 0.3001))) {
+                        fireCandidates[2] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
+                                 Math.floor(bot.entity.position.y) - i,
+                                 Math.floor(bot.entity.position.z + 0.3001)));
+                    }
+                    if (!fireCandidates[3] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.301),
+                                 Math.floor(bot.entity.position.y) - i,
+                                 Math.floor(bot.entity.position.z + 0.3001))) {//(!!!)Probably need to account for negatives or something
+                        fireCandidates[3] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
+                                 Math.floor(bot.entity.position.y) - i,
+                                 Math.floor(bot.entity.position.z + 0.3001)));
+                    }
+                }
+                var myFireCandidate = -1;
+                for (var i = 0; i < fireCandidates.length; i++) {
+                    if (fireCandidates[i] && (myFireCandidate == -1 || fireCandidates[i].position.y > fireCandidates[myFireCandidate].position.y)) {
+                        myFireCandidate = i;
+                    }
+                }
+
+                if (myFireCandidate > -1 && fireCandidates[myFireCandidate]) {
+                    myFireCandidate = fireCandidates[myFireCandidate];
+                    bot.dunder.bucketTask.pos = myFireCandidate.position.offset(0, 0, 0);
+                }
 };

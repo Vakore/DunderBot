@@ -4,6 +4,10 @@ function parseMessage(bot, username, msg) {
   if (commanders.includes(username)) {
     //console.log(username == "Vakore");
     switch (msg[0].toLowerCase()) {
+        case "bucketz":
+            bot.dunder.masterState = "bucketTest";
+            bot.dunder.state = "bucketTest";
+        break;
         case "craftin":
             placeCraftingTable(bot);
         break;
