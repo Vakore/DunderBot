@@ -518,12 +518,12 @@ function strictFollow(bot) {
                 //bot.dunder.movesToGo.splice(bot.dunder.movesToGo.length - 1, 1);
             }
                 if (bot.dunder.botMove.faceBackwards <= 0) {
-                    bot.lookAt(new Vec3(myMove.x + 0.5, bot.dunder.lookY, myMove.z + 0.5), true);
+                    botLookAt(bot, new Vec3(myMove.x + 0.5, bot.dunder.lookY, myMove.z + 0.5), 25);
                 } else {
                     bot.dunder.botMove.forward = !bot.dunder.botMove.forward;
                     bot.dunder.botMove.back = !bot.dunder.botMove.back;
                     if (bot.dunder.movesToGo[bot.dunder.lastPos.currentMove]) {
-                        bot.lookAt(new Vec3(
+                        botLookAt(bot, new Vec3(
                                bot.entity.position.x + (bot.entity.position.x - (bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x + 0.5)),
                                bot.dunder.lookY,
                                bot.entity.position.z + (bot.entity.position.z - (bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z + 0.5))),
@@ -564,19 +564,29 @@ function strictFollow(bot) {
 
         //disabling water clutching due to jump sprinting being WIP
         //console.log(bot.entity.velocity.y + " is velY");
-        if (bot.entity.velocity.y < -0.3518 /*&& bot.entity.velocity.y <= -0.5518*/) {
-            if (bot.dunder.onFire && bot.entity.onGround || true) {
+        if (bot.dunder.bucketTask.active || bot.entity.velocity.y < -0.3518 /*&& bot.entity.velocity.y <= -0.5518*/) {
+            if (!bot.dunder.bucketTask.active /*bot.dunder.onFire && bot.entity.onGround || true*/) {
                 bot.dunder.bucketTask.pos = null;
                 getHighestBlockBelow(bot);
-                if (bot.dunder.bucketTask.pos && Math.abs(bot.entity.position.y - bot.dunder.bucketTask.pos.y) > 3.2) {
+                if (bot.dunder.bucketTask.pos /*&& Math.abs(bot.entity.position.y - bot.dunder.bucketTask.pos.y) > 3.2*/) {
                     equipItem(bot, ["water_bucket"]);
                     bot.dunder.lookY = bot.entity.position.y - 20;
+                    bot.dunder.bucketTask.lastState = bot.dunder.masterState;
                     bot.dunder.masterState = "bucketTest";
                     bot.dunder.state = "bucketTest";
                     bot.dunder.bucketTask.blockFunc = getHighestBlockBelow;
+                    bot.dunder.bucketTask.entity = bot.entity;
                     bot.dunder.bucketTask.bucket = "water_bucket";
+                    bot.dunder.bucketTask.bucketCondition = function(bot) {return (!bot.entity.onGround && !bot.entity.isInWater);};
+                    bot.dunder.bucketTask.bucketCondition2 = function(bot) {return (bot.entity.onGround || bot.entity.isInWater);};
+                    bot.dunder.bucketTask.ogCount = hasItemCount(bot, (name) => {return name == "water_bucket";});
+                    bot.dunder.bucketTask.timeout = 20;
                     console.log("clutch");
+                    bot.dunder.bucketTask.active = true;
                 }
+                //doBucketMode(bot);
+            } else {
+                doBucketMode(bot);
             }
         }
 

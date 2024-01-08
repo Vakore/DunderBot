@@ -84,7 +84,7 @@ function simulateJump(bot, target, stateBase, searchCount, theParent) {
     //bot.chat("/particle minecraft:flame ~ ~ ~");
             //bot.entity.yaw
           //var target = bot.nearestEntity();
-          //bot.lookAt(new Vec3(target.position.x, bot.entity.position.y + 1.6, target.position.z), 360);
+          //botLookAt(bot, new Vec3(target.position.x, bot.entity.position.y + 1.6, target.position.z), 360);
           var myStateBase = stateBase;
           //console.log(bot.username + ", " + target.position + ", " + myStateBase.pos);
           var myDelta = new Vec3(target.position.x - myStateBase.pos.x, target.position.y - myStateBase.pos.y, target.position.z - myStateBase.pos.z);
@@ -145,7 +145,7 @@ function simulateJump(bot, target, stateBase, searchCount, theParent) {
                   mySearcher = mySearcher.parent;
               }
               bot.dunder.jumpTargets.push(mySearcher.state.pos);
-              bot.lookAt(new Vec3(mySearcher.state.pos.x, /*mySearcher.state.pos.y*/target.position.y + 1.6, mySearcher.state.pos.z), 100);
+              botLookAt(bot, new Vec3(mySearcher.state.pos.x, /*mySearcher.state.pos.y*/target.position.y + 1.6, mySearcher.state.pos.z), 50);
               bot.dunder.jumpTarget = mySearcher.state.pos;
               bot.dunder.jumpYaw = mySearcher.state.yaw;
               bot.dunder.jumpTarget.shouldJump = mySearcher.shouldJump;
@@ -280,7 +280,7 @@ function jumpSprintOnPath(bot, target, stateBase, searchCount, theParent) {
                   mySearcher = mySearcher.parent;
               }
               bot.dunder.jumpTargets.push(mySearcher.state.pos);
-              bot.lookAt(new Vec3(mySearcher.state.pos.x, /*mySearcher.state.pos.y*/target.position.y + 1.6, mySearcher.state.pos.z), 100);
+              botLookAt(bot, new Vec3(mySearcher.state.pos.x, /*mySearcher.state.pos.y*/target.position.y + 1.6, mySearcher.state.pos.z), 50);
               bot.dunder.jumpTarget = mySearcher.state.pos;
               //console.log(mySearcher.score);
               bot.dunder.jumpYaw = mySearcher.state.yaw;
@@ -371,7 +371,7 @@ function doJumpSprintStuff(bot) {
         bot.dunder.botMove.sprint = true;
         bot.dunder.botMove.jump = bot.dunder.jumpTarget.shouldJump;
         bot.dunder.botMove.back = false;
-        bot.look(bot.dunder.jumpYaw, 0, 100);
+        botLook(bot, bot.dunder.jumpYaw, 0, 50);
             if (bot.dunder.movesToGo[bot.dunder.lastPos.currentMove]) {
                 for (var i = 0; i < bot.dunder.movesToGo.length; i++) {
                     if (dist3d(bot.entity.position.x, bot.entity.position.y, bot.entity.position.z, bot.dunder.movesToGo[i].x, bot.dunder.movesToGo[i].y, bot.dunder.movesToGo[i].z) <

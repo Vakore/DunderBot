@@ -361,7 +361,7 @@ function placeBlock(bot, x, y, z, placeBackwards, extraOptions = {}) {
     if (bot.targetDigBlock /*|| !bot.entity.heldItem*/) {canPlace = false;}
     if (canPlace) {
         bot.dunder.blockPackets.push({"x":x,"y":y,"z":z,"endFunc":extraOptions.endFunc});//used in case of weirdness from the server
-        bot.lookAt(new Vec3(x, y, z), 100);
+        botLookAt(bot, new Vec3(x, y, z), 100);
         //attackTimer = 0;
         bot.placeBlock(bot.blockAt(new Vec3(x, y, z)), placeOffSet).then(function(e) {
             //attackTimer = 0;
@@ -780,40 +780,49 @@ function distMan3d(x1, y1, z1, x2, y2, z2) {//Ideally a cheaper function
 
 
 //bucket task stuff
-function getHighestBlockBelow(bot) {
+function getHighestBlockBelow(bot, entity) {
+    let useWidth = 0.3001;
+    if (!entity) {
+        entity = bot.entity;
+    } else {
+        if (entity.name != "player") {
+            useWidth = (entity.width / 2) - 0.1;
+        }
+    }
+    //console.log(useWidth);
                 var fireCandidates = [false, false, false, false];
                 for (var i = 0; i < 23; i++) {
-                    if (Math.floor(bot.entity.position.y) - i <= -64) {
+                    if (Math.floor(entity.position.y) - i <= -64) {
                         i = 23;
                         break;
                     }
-                    if (!fireCandidates[0] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
-                                 Math.floor(bot.entity.position.y) - i,
-                                 Math.floor(bot.entity.position.z - 0.3001))) {
-                        fireCandidates[0] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
-                                 Math.floor(bot.entity.position.y) - i,
-                                 Math.floor(bot.entity.position.z - 0.3001)));
+                    if (!fireCandidates[0] && blockSolid(bot, Math.floor(entity.position.x - useWidth),
+                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.z - useWidth))) {
+                        fireCandidates[0] = bot.blockAt(new Vec3(Math.floor(entity.position.x - useWidth),
+                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.z - useWidth)));
                     }
-                    if (!fireCandidates[1] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.3001),
-                                 Math.floor(bot.entity.position.y) - i,
-                                 Math.floor(bot.entity.position.z - 0.3001))) {
-                        fireCandidates[1] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
-                                 Math.floor(bot.entity.position.y) - i,
-                                 Math.floor(bot.entity.position.z - 0.3001)));
+                    if (!fireCandidates[1] && blockSolid(bot, Math.floor(entity.position.x + useWidth),
+                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.z - useWidth))) {
+                        fireCandidates[1] = bot.blockAt(new Vec3(Math.floor(entity.position.x + useWidth),
+                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.z - useWidth)));
                     }
-                    if (!fireCandidates[2] && blockSolid(bot, Math.floor(bot.entity.position.x - 0.3001),
-                                 Math.floor(bot.entity.position.y) - i,
-                                 Math.floor(bot.entity.position.z + 0.3001))) {
-                        fireCandidates[2] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x - 0.3001),
-                                 Math.floor(bot.entity.position.y) - i,
-                                 Math.floor(bot.entity.position.z + 0.3001)));
+                    if (!fireCandidates[2] && blockSolid(bot, Math.floor(entity.position.x - useWidth),
+                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.z + useWidth))) {
+                        fireCandidates[2] = bot.blockAt(new Vec3(Math.floor(entity.position.x - useWidth),
+                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.z + useWidth)));
                     }
-                    if (!fireCandidates[3] && blockSolid(bot, Math.floor(bot.entity.position.x + 0.301),
-                                 Math.floor(bot.entity.position.y) - i,
-                                 Math.floor(bot.entity.position.z + 0.3001))) {//(!!!)Probably need to account for negatives or something
-                        fireCandidates[3] = bot.blockAt(new Vec3(Math.floor(bot.entity.position.x + 0.3001),
-                                 Math.floor(bot.entity.position.y) - i,
-                                 Math.floor(bot.entity.position.z + 0.3001)));
+                    if (!fireCandidates[3] && blockSolid(bot, Math.floor(entity.position.x + 0.301),
+                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.z + useWidth))) {//(!!!)Probably need to account for negatives or something
+                        fireCandidates[3] = bot.blockAt(new Vec3(Math.floor(entity.position.x + useWidth),
+                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.z + useWidth)));
                     }
                 }
                 var myFireCandidate = -1;
