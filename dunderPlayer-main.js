@@ -267,6 +267,12 @@ function makeBots(cbtm) {
         "antiRightClickTicks":0,
 
         "lastPosition":new Vec3(0, 0, 0),
+
+        "oldPosition":new Vec3(0, 0, 0),
+        "oldOnGround":new Vec3(0, 0, 0),
+        "oldIsInWater":new Vec3(0, 0, 0),
+        "oldIsInLava":new Vec3(0, 0, 0),
+
         "onFire":false,
         "onfire":0,
         "looktimer":0,
@@ -290,6 +296,7 @@ function makeBots(cbtm) {
             entity:null,
             active:false,
             ogCount:0,
+            attemptCount:3,
         },
 
         //pathfinding
@@ -433,6 +440,12 @@ function makeBots(cbtm) {
                 dunderTaskLog("ILLEGAL DIGGING OCCURED!");
             }
             runBot(bots[cbtm]);
+            //We have to do this since physicsTick is 1 tick ahead, which is annoying for buckets when trying to clutch
+            bots[cbtm].dunder.oldPosition = bots[cbtm].entity.position.offset(0, 0, 0);
+            bots[cbtm].dunder.oldOnGround = bots[cbtm].entity.onGround;
+            bots[cbtm].dunder.oldIsInWater = bots[cbtm].entity.isInWater;
+            bots[cbtm].dunder.oldIsInLava = bots[cbtm].entity.isInLava;
+
             if (bot.dunder.bucketTask.active) {console.log("bucketting ");}
             if (bots[cbtm].dunderTaskCompleted && bots[cbtm].dunderTasks.length > 0) {
                 bots[cbtm].dunderTaskCompleted = false;
@@ -872,7 +885,7 @@ for (var i in bot.entities) {
             }*/
     } else if (bot.isSleeping) {
         bot.dunder.state = "sleeping";
-    } else if ((bot.dunder.onfire > 0 || bot.dunder.bucketTask.active) && bot.dunder.masterState != "bucketTest") {
+    } else if ((bot.dunder.onfire > 0 || bot.dunder.bucketTask.active) && bot.dunder.masterState != "bucketTest" && hasItem(bot, ["water_bucket"])) {
         if (!bot.dunder.bucketTask.active) {
             bot.dunder.bucketTask.pos = null;
             getHighestBlockBelow(bot);
@@ -884,11 +897,12 @@ for (var i in bot.entities) {
                 bot.dunder.bucketTask.blockFunc = getHighestBlockBelow;
                 bot.dunder.bucketTask.entity = bot.entity;
                 bot.dunder.bucketTask.bucket = "water_bucket";
-                bot.dunder.bucketTask.bucketCondition = function(bot) {return bot.dunder.onFire && bot.entity.onGround;};
+                bot.dunder.bucketTask.bucketCondition = function(bot) {return (bot.dunder.onFire && bot.entity.onGround && bot.heldItem && bot.heldItem.name != "bucket");};
                 bot.dunder.bucketTask.bucketCondition2 = function(bot) {return true;};
                 bot.dunder.bucketTask.ogCount = hasItemCount(bot, (name) => {return name == "water_bucket";});
                 bot.dunder.bucketTask.active = true;
                 bot.dunder.bucketTask.timeout = 20;
+                bot.dunder.bucketTask.attemptCount = 3;
             }
         } else {
             doBucketMode(bot);
@@ -961,7 +975,7 @@ for (var i in bot.entities) {
                     bot.dunder.worrySprintJump = 2;
                 }
             } else if (target && bot.entity.isInWater) {
-                botLookAt(bot, target.position.offset(0, 1.65, 0), 50);
+                botLookAt(bot, target.position.offset(0, 1.62, 0), 50);
                 //if () {
                     bot.setControlState("forward", true);
                     bot.setControlState("sprint", true);
@@ -1003,7 +1017,7 @@ for (var i in bot.entities) {
                         moveInDir(bot, new PlayerState(bot, {forward: false, back: true, left: false, right: false, jump: false,sprint: false,sneak: false,}));
                     }
                     //console.log(target.isPassenger);
-                    if ((target.name != "pig" || parseEntityAnimation("pig", target.metadata[0])[0]) && getHitTimes(bot, target.uuid) <= 0 && botCanHit(bot, target) <= 3.0 && bot.dunder.shieldTimer <= 0 && (bot.dunder.attackTimer >= getAttackSpeed(getHeldItem(bot)) || targetDistXZ < threatList[myThreat][2] * 0.65)) {
+                    if ((target.name != "pig" || parseEntityAnimation("pig", target.metadata[0])[0] || !hasItem(bot, ["lava_bucket"])) && getHitTimes(bot, target.uuid) <= 0 && botCanHit(bot, target) <= 3.0 && bot.dunder.shieldTimer <= 0 && (bot.dunder.attackTimer >= getAttackSpeed(getHeldItem(bot)) || targetDistXZ < threatList[myThreat][2] * 0.65)) {
                         if (bot.entity.velocity.y >= -0.1) {
                             //bot.setControlState("sprint", false);
                         } else {
@@ -1011,7 +1025,7 @@ for (var i in bot.entities) {
                         }
                         attackEntity(bot, target);
                         console.log(target.name + ", " + JSON.stringify(target.metadata));
-                    } else if (target.name == "pig" && !parseEntityAnimation("pig", target.metadata[0])[0]) {
+                    } else if (target.name == "pig" && !parseEntityAnimation("pig", target.metadata[0])[0] && hasItem(bot, ["lava_bucket"])) {
                         if (!bot.dunder.bucketTask.active/*bot.dunder.onFire && bot.entity.onGround || true*/) {
                             bot.dunder.bucketTask.pos = null;
                             getHighestBlockBelow(bot, target);
@@ -1032,6 +1046,7 @@ for (var i in bot.entities) {
                                 console.log("set on fire plz");
                                 bot.dunder.bucketTask.active = true;
                                 bot.dunder.bucketTask.timeout = 20;
+                                bot.dunder.bucketTask.attemptCount = 3;
                             }
                         } else {
                             doBucketMode(bot);
@@ -1102,9 +1117,9 @@ if (false) {
     });
     var raycastedLiquid = null;
     if (waterBlock) {
-        //console.log(waterBlock.position.offset(0.5, 0.5, 0.5).minus(bot.entity.position.offset(0, 1.65, 0)).normalize() + "\n" + (new Vec3(-Math.sin(bot.entity.yaw) * Math.cos(bot.entity.pitch), Math.sin(bot.entity.pitch), -Math.cos(bot.entity.pitch) * Math.cos(bot.entity.yaw)).normalize()));
+        //console.log(waterBlock.position.offset(0.5, 0.5, 0.5).minus(bot.entity.position.offset(0, 1.62, 0)).normalize() + "\n" + (new Vec3(-Math.sin(bot.entity.yaw) * Math.cos(bot.entity.pitch), Math.sin(bot.entity.pitch), -Math.cos(bot.entity.pitch) * Math.cos(bot.entity.yaw)).normalize()));
 
-        raycastedLiquid = bot.world.raycast(bot.entity.position.offset(0, 1.65, 0), new Vec3(-Math.sin(bot.entity.yaw) * Math.cos(bot.entity.pitch), Math.sin(bot.entity.pitch), -Math.cos(bot.entity.pitch) * Math.cos(bot.entity.yaw)).normalize(), 5, function(leBlock) {
+        raycastedLiquid = bot.world.raycast(bot.entity.position.offset(0, 1.62, 0), new Vec3(-Math.sin(bot.entity.yaw) * Math.cos(bot.entity.pitch), Math.sin(bot.entity.pitch), -Math.cos(bot.entity.pitch) * Math.cos(bot.entity.yaw)).normalize(), 5, function(leBlock) {
             //console.log(leBlock.name);
             if (leBlock && leBlock.name == "water") {
                 //console.log("ye!" + leBlock.name);
