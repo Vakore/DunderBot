@@ -1,4 +1,5 @@
 <html>
+<body oncontextmenu="return false;">
 <title>DunderBot Inventory Manager Tests</title>
 <h1>DunderBot Inventory Manager Tests</h1>
 <h2 id = "inventoryContext"></h2>
@@ -11,6 +12,7 @@
         items:[],
         recipes:{},
         blockCollisionShapes:{},
+        smeltableInputs:{},
     };
 </script>
     <!--From prismarine-datahttps://github.com/PrismarineJS/minecraft-data/blob/master/data/pc/1.20/-->
@@ -18,8 +20,27 @@
     <script src = "recipes.txt"></script>
     <script src = "blockCollisionShapes.txt"></script>
     <script src = "foods.txt"></script>
+    <script src = "smeltableInputs.txt"></script>
     <!--From prismarine-datahttps://github.com/PrismarineJS/minecraft-data/blob/master/data/pc/1.20/-->
 <script>
+/*for (var i in mcData.smeltableInputs) {
+   var nameFine = [false, false];
+   for (var j = 0; j < mcData.items.length; j++) {
+     if (i == mcData.items[j].name) {
+       nameFine[0] = true;
+     }
+     if (mcData.smeltableInputs[i].output == mcData.items[j].name) {
+       nameFine[1] = true;
+     }
+   }
+   if (!nameFine[0]) {
+     console.log(i + " : " + nameFine[0]);
+   }
+   if (!nameFine[1]) {
+     console.log(mcData.smeltableInputs[i].output + " : " + nameFine[1]);
+   }
+}*/
+
 var clickRequests = [];
 setInterval( () => {
 var myData = { "thing": "123", "clickRequests":clickRequests };
@@ -32,8 +53,10 @@ fetch("/write", {
 })
   .then((response) => response.json())
   .then((data) => {
+   try {
     leBot.quickBarSlot = data.quickBarSlot;
-    console.log(leBot.health + ", " + data.health);
+    //console.log(leBot.health + ", " + data.health);
+    console.log(data.title);
     if (data.isHp) {
         leBot.foodSaturation = data.foodSaturation;
         leBot.food = data.food;
@@ -64,6 +87,11 @@ fetch("/write", {
             }
         }
     }
+    if (data.title) {
+        containerName = data.title;
+        containerId = data.id;
+    }
+   } catch(e) {}
   });
 clickRequests = [];
 //clickRequests.splice(0, Math.floor(clickRequests.length / 2) * 2);
@@ -73,7 +101,14 @@ clickRequests = [];
 
 <script>
 try {
+var containerId = 0;
 var containerName = "Inventory";
+var containerNames = [
+    "Inventory",
+    "",
+    "Chest",
+    "Large Chest",
+];
 var leBot = {
   "quickBarSlot":0,
   "health":20,
@@ -338,7 +373,9 @@ function itemBox(slot, x, y, requiredItem) {
     can.fillStyle = "rgb(96, 96, 96)";
     if (mouseX / 2 > x && mouseY / 2 > y && mouseX / 2 < x + 19 && mouseY / 2 < y + 19) {
         if (clicked) {
-            clickRequests.push(slot);
+            clickRequests.push([clicked - 1, slot]);
+        } else if (keysDown[81]) {
+            clickRequests.push([2, slot]);
         }
         can.fillStyle = "rgb(128, 128, 128)";
         //if (inventoryItemNames[slot]) {
@@ -414,11 +451,15 @@ document.addEventListener("keyup",function(e) {
 });
 
 document.getElementById("canvas").addEventListener("click", (e) => {
+    e.preventDefault();
     clicked = 1;
     if (e.which == 3) {
         clicked = 2;
     }
 });
+window.oncontextmenu = function () {
+  clicked = 2;
+};
 
 var boxX = 16;
 var boxY = 16;
@@ -438,14 +479,14 @@ can.fillRect(0, 0, 576, 576);
 can.fillStyle = "rgb(144, 144, 144)";
 can.fillRect(boxX, boxY-15, boxW, boxH+14);
 can.fillStyle = "rgb(0, 0, 0)";
-can.fillText(containerName, boxX+4, boxY-3);
+can.fillText(containerName + " : " + containerId, boxX+4, boxY-3);
 can.fillStyle = "rgb(255, 255, 255)";
-can.fillText(containerName, boxX+3, boxY-4);
+can.fillText(containerName + " : " + containerId, boxX+3, boxY-4);
 can.fillStyle = "rgb(80, 80, 80)";
 //alert(inventoryItemNames[20][0]);
     
 
-    if (containerName == "Inventory") {
+    if (containerId == 0) {
 can.fillStyle = "rgb(0, 0, 0)";
 can.fillRect(boxX + 20, boxY, 56, 75);
     
@@ -475,6 +516,7 @@ if (leBot.inLava) {
     can.fillStyle = "rgb(255, 255, 255)";
     can.fillText("In water", boxX + 23, boxY + 7);
 }
+    } else if (containerId == 2) {
     }
 can.save();
 can.translate(0, -(172-boxH));
@@ -610,6 +652,46 @@ itemBox(0, boxX+153, boxY+29);
 for (var i = 46; i < inventoryItemNames.length; i++) {
     itemBox(i, ((i - 38) % 15) * 19, -(172-boxH) + boxY + 180 + Math.floor((i - 38) / 15) * 19);
 }
+    } else if (containerName == '{"translate":"container.chestDouble"}') {
+can.fillStyle = "rgb(255, 255, 255)";
+can.fillRect(boxX + leBot.quickBarSlot * 19, -(172-boxH) + boxY + 151, 20, 20);
+for (var i = 0; i < 54; i++) {
+    itemBox(i, boxX + 1 + (i * 19) - Math.floor(i / 9) * 9*19, -(172-boxH) + boxY + Math.floor((i / 9)) * 19);
+    //itemBox(i, boxX + 1 + (i * 19) - Math.floor(i / 9) * 9*19, -(172-boxH) + boxY + 76 + (i >= 27) * 19 + Math.floor((i / 9)) * 19);
+}
+    
+    } else if (containerName == '{"translate":"container.chest"}' || containerName == '{"translate":"container.enderchest"}' || containerName == '{"translate":"container.shulkerBox"}') {
+can.fillStyle = "rgb(255, 255, 255)";
+can.fillRect(boxX + leBot.quickBarSlot * 19, -(172-boxH) + boxY + 151, 20, 20);
+for (var i = 0; i < 27; i++) {
+    itemBox(i, boxX + 1 + (i * 19) - Math.floor(i / 9) * 9*19, -(172-boxH) + boxY + Math.floor((i / 9)) * 19);
+}
+for (var i = 27; i < 63; i++) {
+    itemBox(i, boxX + 1 + (i * 19) - Math.floor(i / 9) * 9*19, -(172-boxH) + boxY + 19 + (i >= 54) * 19 + Math.floor((i / 9)) * 19);
+}
+    } else if (containerName == '{"translate":"container.furnace"}' || containerName == '{"translate":"container.smoker"}' || containerName == '{"translate":"container.blast_furnace"}') {
+can.fillStyle = "rgb(255, 255, 255)";
+can.fillRect(boxX + leBot.quickBarSlot * 19, -(172-boxH) + boxY + 151, 20, 20);
+for (var i = 0; i < 36; i++) {
+    itemBox(3+i, boxX + 1 + (i * 19) - Math.floor(i / 9) * 9*19, -(172-boxH) + boxY + 76 + (i >= 27) * 19 + Math.floor((i / 9)) * 19);
+    //can.fillText(inventoryItemNames[i][0].split(","
+}
+
+//itemBox(45, boxX + 77, boxY+57);
+//itemBox(5, boxX+1, boxY, "_helmet");
+//itemBox(6, boxX+1, boxY+19, "_chestplate");
+//itemBox(7, boxX+1, boxY+38, "_leggings");
+//itemBox(8, boxX+1, boxY+57, "_boots");
+
+itemBox(0, boxX+50, boxY+9);
+itemBox(1, boxX+50, boxY+47);
+itemBox(2, boxX+100, boxY+29);
+//itemBox(3, boxX+96, boxY+38);
+//itemBox(4, boxX+115, boxY+38);
+    
+for (var i = 46; i < inventoryItemNames.length; i++) {
+    itemBox(i, ((i - 38) % 15) * 19, -(172-boxH) + boxY + 180 + Math.floor((i - 38) / 15) * 19);
+}
     }
 
 if (inventoryItemNames[-1] != null) {
@@ -654,7 +736,7 @@ if (toReset) {
     scoreInventory(leBot);
 }
 if (toSwap.length >= 3) {
-    clickRequests.push(toSwap[0], toSwap[1], toSwap[0]);
+    clickRequests.push([0, toSwap[0]], [0, toSwap[1]], [0, toSwap[0]]);
 }
 if (toSwap.length > 0 && false) {
     if (inventoryItemNames[toSwap[0]]) {
