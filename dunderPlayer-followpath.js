@@ -353,7 +353,7 @@ function strictFollow(bot) {
                 if (bot.targetDigBlock) {
                     bot.dunder.botMove.forward = false;
                     bot.dunder.botMove.sprint = false;
-                //console.log("balancing mining by standing still");
+                console.log("balancing mining by standing still");
                     var stayStill = attemptToStayStill(bot, bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5);
                      bot.dunder.botMove.forward = stayStill.forward;
                      bot.dunder.botMove.back = stayStill.back;
@@ -363,7 +363,7 @@ function strictFollow(bot) {
                 } else if (!bot.entity.isInWater && !bot.entity.isInLava && bot.dunder.movesToGo[bot.dunder.lastPos.currentMove] && bot.dunder.lastPos.x == bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x && bot.dunder.lastPos.z == bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z && bot.dunder.lastPos.y != bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y) {
                     bot.dunder.botMove.forward = false;
                     bot.dunder.botMove.sprint = false;
-                //console.log("balancing mining by standing still");
+                console.log("balancing mining by standing still");
                     var stayStill = attemptToStayStill(bot, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x + 0.5, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y, bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z + 0.5);
                      bot.dunder.botMove.forward = stayStill.forward;
                      bot.dunder.botMove.back = stayStill.back;
@@ -549,7 +549,7 @@ function strictFollow(bot) {
         } else {
             onPath = false;
             if (dist3d(bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5, bot.entity.position.x, bot.entity.position.y, bot.entity.position.z) < 2) {
-                //console.log("balancing end of path by standing still");
+                console.log("balancing end of path by standing still");
                 var stayStill = attemptToStayStill(bot, bot.dunder.lastPos.x + 0.5, bot.dunder.lastPos.y, bot.dunder.lastPos.z + 0.5);
                 bot.dunder.botMove.forward = stayStill.forward;
                 bot.dunder.botMove.back = stayStill.back;
@@ -579,7 +579,7 @@ function strictFollow(bot) {
 
         //disabling water clutching due to jump sprinting being WIP
         //console.log(bot.entity.velocity.y + " is velY");
-        if (bot.dunder.bucketTask.active || bot.entity.velocity.y < -0.3518 && bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].mType == "fall" && false /*&& bot.entity.velocity.y <= -0.5518*/) {
+        if (bot.dunder.bucketTask.active || bot.entity.velocity.y < -0.3518 && /*bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].mType == "fall" <- this fails sometimes since we aren't checking if it exists &&*/ false /*&& bot.entity.velocity.y <= -0.5518*/) {
             bot.dunder.lookY = bot.entity.position.y - 20;
             if (!bot.dunder.bucketTask.active /*bot.dunder.onFire && bot.entity.onGround || true*/) {
                 bot.dunder.bucketTask.pos = null;
@@ -657,12 +657,20 @@ function strictFollow(bot) {
                     }
                 }
 
-                if (worryBlockCount > 0 && worryBlockCount < 3) {
-                    console.log("Can we skip from " + earliestSkip + " to after " + lattestSkip);
+                earliestSkip++;
+                lattestSkip--;
+                if (worryBlockCount > 0 && worryBlockCount < 3 && lattestSkip >= 0 && earliestSkip < bot.dunder.movesToGo.length) {
+                    console.log("Can we skip from " + (earliestSkip) + " to after " + (lattestSkip));
 
-                    var worryBlockSkippable = false;//findPath(bot, dunderBotPathfindSkips, 10, Math.floor(bot.dunder.movesToGo[lattestSkip].x), Math.floor(bot.dunder.movesToGo[lattestSkip].y), Math.floor(bot.dunder.movesToGo[lattestSkip].z));
+                    var worryBlockSkippable = false;
+                    findPath(bot, dunderBotPathfindSkips, 10, Math.floor(bot.dunder.movesToGo[lattestSkip].x), Math.floor(bot.dunder.movesToGo[lattestSkip].y), Math.floor(bot.dunder.movesToGo[lattestSkip].z), false, false);
+                    console.log(bot.dunder.skipMovesToGo.length);
+                    worryBlockSkippable = (bot.dunder.skipMovesToGo.length > 0);
                     if (worryBlockSkippable) {
-                        console.log("skip it!");
+                        console.log("skip it! ");
+                        //should function just fine without these splices here
+                        bot.dunder.movesToGo.splice(lattestSkip, earliestSkip - lattestSkip);
+                        bot.dunder.movesToGo.splice(lattestSkip, 0, ...bot.dunder.skipMovesToGo);
                     } else {
                         console.log("can't skip... (never checked, program it lol)");
                     }
@@ -688,7 +696,7 @@ function strictFollow(bot) {
 
 
 function attemptToStayStill(bot, x, y, z) {
-    //console.log("stay still!");
+    console.log("stay still!");
     var myStates = [
         new PlayerState(bot, {forward: true, back: false, left: false, right: false, jump: false,sprint: false,sneak: false,}),
         new PlayerState(bot, {forward: false, back: true, left: false, right: false, jump: false,sprint: false,sneak: false,}),

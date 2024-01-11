@@ -18,6 +18,25 @@ function veinExcluded(bot, block) {
 function acceptDunderTask(bot, taskType, options) {
   let validTask = true;
   switch (taskType) {
+    case "closeWindow":
+        bot.closeWindow(bot.dunder.currentWindow);
+    break;
+    case "openContainer":
+        let openDisBlock = bot.findBlock({
+            matching: (block) => (block.name == options.name),
+            distance:5,
+            useExtraInfo:true,
+        });
+        if (openDisBlock) {
+            botLookAt(bot, openDisBlock.position.offset(0.5, 0.5, 0.5), 1000);
+            botActivateBlock(bot, openDisBlock);
+        }
+        setTimeout((bot) => {bot.dunderTaskCompleted = true;}, 5000, bot);
+        bot.dunder.masterState = "neutral";
+        bot.dunder.state = "neutral";
+        bot.dunderTaskCurrent = "openContainer";
+    break;
+
     case "equip":
         equipItem(bot, options.items, options.destination);
         setTimeout((bot) => {bot.dunderTaskCompleted = true;}, 100, bot);
@@ -34,7 +53,14 @@ function acceptDunderTask(bot, taskType, options) {
         bot.dunder.masterState = "placecrafting";
         bot.dunder.state = "placecrafting";
     break;
-
+    case "placeFurnace":
+        console.log("qwerty furnace");
+        placeCraftingTable(bot, "furnace");
+        //setTimeout((bot) => {bot.dunderTaskCompleted = true;}, 250, bot);
+        bot.dunderTaskCurrent = "placeCrafting";
+        bot.dunder.masterState = "placecrafting";
+        bot.dunder.state = "placecrafting";
+    break;
     case "craft":
         console.log("Craft: " + JSON.stringify(options));
         let item = bot.registry.itemsByName[options.name];

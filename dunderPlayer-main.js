@@ -28,7 +28,7 @@ var dunderDebug = false;//Show debug information in the console or not.
 
 /*
 TODO: rror: Event blockUpdate:(130, 130, -49) did not fire within timeout of 5000ms
-Mysterious "pathfind and get stuck" bug
+Mysterious "pathfind and get stuck" bug - Presumed fixed!
 Jump sprint improvements - lookahead to decide not to jump sprint(i.e. will get stuck in "infinite loop", strictFollow instead)
 Jump sprint improvements - lookahead to figure out a more optimal way to maintain velocity, and also always jump the first tick grounded rather than the next one.
 
@@ -143,6 +143,11 @@ const dunderBotPathfindDefaults = {
     "bestNodeIndex":"bestNodeIndex",
     "attempts":"attempts",
     "movesToGo":"movesToGo",
+    "pathfinderOptions":"pathfinderOptions",
+    "findingPath":"findingPath",
+    "searchingPath":"searchingPath",
+    "lastPos":"lastPos",
+    "lastPosOnPath":"lastPosOnPath",
 };
 const dunderBotPathfindSkips = {
     "nodes":"skipNodes",
@@ -153,6 +158,11 @@ const dunderBotPathfindSkips = {
     "attempts":"skipAttempts",
     "attempts":"skipMaxAttempts",
     "movesToGo":"skipMovesToGo",
+    "pathfinderOptions":"skipPathfinderOptions",
+    "findingPath":"skipFindingPath",
+    "searchingPath":"skipSearchingPath",
+    "lastPos":"skipLastPos",
+    "lastPosOnPath":"skipLastPosOnPath",
 };
 
 //require("events").EventEmitter.prototype._maxListeners = 100;
@@ -225,7 +235,25 @@ function makeBots(cbtm) {
     bots[cbtm].dunderTaskCompleted = false;
     bots[cbtm].dunderTaskCurrent = "none";
 
+
+    bots[cbtm].on("windowOpen", (window) => {
+        bots[cbtm].dunder.network.appSendInv = true;
+        bots[cbtm].dunder.currentWindow = window;
+        console.log(bots[cbtm].dunder.currentWindow.title);
+        console.log(bots[cbtm].dunder.currentWindow.id);
+        console.log(bots[cbtm].dunder.currentWindow.type);
+    });
+    bots[cbtm].on("windowClose", (window) => {
+        bots[cbtm].dunder.network.appSendInv = true;
+        bots[cbtm].dunder.currentWindow = bots[cbtm].inventory;
+        console.log(bots[cbtm].dunder.currentWindow.title);
+        console.log(bots[cbtm].dunder.currentWindow.id);
+        console.log(bots[cbtm].dunder.currentWindow.type);
+    });
+
     bots[cbtm].dunder = {
+        "currentWindow":bots[cbtm].inventory,
+
         "lookToward":{
             priority:-Infinity,
             mode:0,
@@ -306,8 +334,11 @@ function makeBots(cbtm) {
         //"destination":[0, 0, 0],
         "destinationTimer":30,
         "searchingPath":10,
+        "skipSearchingPath":10,
         "lastPos":{"currentMove":0,x:0,y:0,z:0},
+        "skipLastPos":{"currentMove":0,x:0,y:0,z:0},
         "lastPosOnPath":false,
+        "skipLastPosOnPath":false,
 
         "nodes3d":[],
         "openNodes":[],
@@ -349,6 +380,8 @@ function makeBots(cbtm) {
         },
 
         "findingPath":null,
+        "skipFindingPath":null,
+
         "foundPath":false,
         "attempts":0,
         "skipAttempts":0,
@@ -372,6 +405,18 @@ function makeBots(cbtm) {
             "placeBlocks":true,//(!!!) disable these for testing later!
             "breakBlocks":true,//(!!!)
             "lowestY":-65,
+            "cornerSkim":false,
+        },
+        "skipPathfinderOptions":{
+            "maxFall":3,
+            "maxFallClutch":256,
+            "canClutch":!false,
+            "sprint":true,
+            "parkour":true,
+            "placeBlocks":false,
+            "breakBlocks":false,
+            "lowestY":-65,
+            "cornerSkim":true,
         },
 
         //Ratfinding, unused
@@ -456,6 +501,15 @@ function makeBots(cbtm) {
                 //bots[cbtm].dunderTaskCurrent = "none";
             }
             dunderTaskManager(bots[cbtm]);
+
+            //Yeah this code is duplicated twice.
+            if (bot.dunder.lookToward.priority > -Infinity) {
+                if (bot.dunder.lookToward.mode == 0) {
+                    bot.look(bot.dunder.lookToward.yaw, bot.dunder.lookToward.pitch, true);
+                } else {
+                    bot.lookAt(bot.dunder.lookToward.pos, true);
+                }
+            }
         }
         /*if (bots[cbtm].username == "DunderBot") {
             console.log(second + ", " + timer);
@@ -555,6 +609,7 @@ function runBot(bot) {
     bot.dunder.needsSpeed -= (bot.dunder.needsSpeed > -100);
     bot.dunder.isDigging -= (bot.dunder.isDigging > -10);
     bot.dunder.searchingPath -= (bot.dunder.searchingPath > -100);
+    bot.dunder.skipSearchingPath -= (bot.dunder.skipSearchingPath > -100);
     bot.dunder.jumpTargetDelay -= (bot.dunder.jumpTargetDelay > -10);
     bot.dunder.worryBlockSkipTimer -= (bot.dunder.worryBlockSkipTimer > -10);
     if (bot.targetDigBlock) {bot.dunder.isDigging = 2;}
@@ -703,7 +758,9 @@ for (var i in bot.entities) {
         bot.dunder.onfire--;
     }
 
-    if (bot.dunder.masterState == "ratfinding") {
+    if (bot.dunder.masterState == "neutral") {
+        bot.dunder.state = "neutral";
+    } else if (bot.dunder.masterState == "ratfinding") {
         bot.dunder.state = "ratfind";
         target = bot.dunder.bestRat;
         if ((bot.dunder.jumpTarget || bot.entity.onGround) && target) {
@@ -744,7 +801,7 @@ for (var i in bot.entities) {
             bot.dunder.goal.y = bot.dunderTaskDetails.y;
             bot.dunder.goal.z = bot.dunderTaskDetails.z;
             bot.dunder.goal.reached = false;
-            if (bot.dunder.movesToGo.length <= 1 && !bot.dunder.findingPath) {
+            if (bot.dunder.movesToGo.length <= 1 && !bot.dunder[dunderBotPathfindDefaults.findingPath]) {
                  if (dist3d(bot.entity.position.x, bot.entity.position.y + 1.6, bot.entity.position.z, bot.dunderTaskDetails.x + 0.5, bot.dunderTaskDetails.y + 0.5, bot.dunderTaskDetails.z + 0.5) > 5) {
                      if (bot.dunderTaskDetails.failedPathfind && bot.dunderTaskDetails.failedPathfind.x == Math.floor(bot.dunderTaskDetails.x) && bot.dunderTaskDetails.failedPathfind.y == Math.floor(bot.dunderTaskDetails.y) && bot.dunderTaskDetails.failedPathfind.z == Math.floor(bot.dunderTaskDetails.z)) {
                          for (var i = 0; i < bot.dunderTaskDetails.blocksList.length; i++) {
@@ -919,7 +976,8 @@ for (var i in bot.entities) {
         bot.dunder.state = "idle";
     }//buckettask old leftovers go here
 
-    if (bot.dunder.state == "idle") {
+    if (bot.dunder.state == "neutral") {
+    } else if (bot.dunder.state == "idle") {
             bot.dunder.goal.reached = true;
             bot.dunder.movesToGo.splice(0, bot.dunder.movesToGo.length);
             //console.log(bot.dunder.movesToGo);
@@ -1029,7 +1087,7 @@ for (var i in bot.entities) {
                         if (!bot.dunder.bucketTask.active/*bot.dunder.onFire && bot.entity.onGround || true*/) {
                             bot.dunder.bucketTask.pos = null;
                             getHighestBlockBelow(bot, target);
-                            if (bot.dunder.bucketTask.pos) {
+                            if (bot.dunder.bucketTask.pos && dist3d(bot.dunder.oldPosition.x, bot.dunder.oldPosition.y + 1.62, bot.dunder.oldPosition.z, bot.dunder.bucketTask.pos.x + 0.5, bot.dunder.bucketTask.pos.y + 1, bot.dunder.bucketTask.pos.z + 0.5) < 5.5) {
                                 equipItem(bot, ["lava_bucket"]);
                                 bot.dunder.bucketTask.lastState = bot.dunder.masterState;
                                 bot.dunder.masterState = "bucketTest";

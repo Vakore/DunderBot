@@ -7,6 +7,7 @@ DONE: 1. Vanish cases for water and lava(sponges, lava to obby because lava, etc
 
 3. Inching forward issue when tracking pig
 - No longer inching issue, braindead issue/state stuck issue
+    Reproduce by spawning a big farish away from the bot when it can see it, then kill the pig
 
 DONE: 4a. Raycast when trying to pickup(i.e. in leaves, behind cobble wall, etc.)
  DONE: 4b. failcases(add this before 4a)
@@ -19,6 +20,8 @@ DONE* 5. No bucket cases(i.e. task is to place lava bucket when have none), both
 6. Prefer picking up liquid just placed as opposed to first found
 
 7. fire block/lava block cases
+
+8. Face cases
 */
 
 function botLook(bot, yaw, pitch, priority) {
@@ -51,7 +54,7 @@ function doBucketMode(bot) {
         //console.log(bot.dunder.bucketTask.entity);
         if (bot.dunder.bucketTask.pos && dist3d(bot.dunder.oldPosition.x, bot.dunder.oldPosition.y + 1.62, bot.dunder.oldPosition.z, bot.dunder.bucketTask.pos.x + 0.5, bot.dunder.bucketTask.pos.y + 1, bot.dunder.bucketTask.pos.z + 0.5) > 5.5) {
             botLookAt(bot, bot.dunder.bucketTask.pos.offset(0.5, 1.0, 0.5), 100);
-            //bot.dunder.bucketTask.active = false;
+            bot.dunder.bucketTask.active = false;//might need to disable this for water clutching, maybe make it a toggle in dunder.bucketTask
         } else if (bot.dunder.bucketTask.bucketCondition(bot)) {
                 if (bot.dunder.bucketTask.pos) {
                     if (bot.dunder.bucketTask.equipDelay < 0) {
@@ -85,7 +88,7 @@ function doBucketMode(bot) {
                     //bot.dunder.botMove.sneak = true;
                     //setTimeout((bot) => {bot.activateItem(false);}, 50, bot);
                     bot.activateItem(false);
-                    bot.swingArm();
+                    swingArm(bot);
                     bot.dunder.looktimer = 1;
                     bot.dunder.bucketTask.timeout = 20;
                     bot.dunder.bucketTask.attemptCount = 3;
@@ -145,7 +148,7 @@ function doBucketMode(bot) {
                 bot.dunder.bucketTask.timeout += 2;
             } else if (/*bot.dunder.cursorBlock*/waterBlock && raycastedLiquid && raycastedLiquid.position.equals(waterBlock.position) && bot.heldItem && (bot.heldItem.name == 'bucket') && bot.dunder.looktimer < 0) {
                 bot.activateItem(false);
-                bot.swingArm();
+                swingArm(bot);
                 bot.dunder.looktimer = 1;
                 bot.dunder.bucketTask.timeout = 20;
                 bot.dunder.bucketTask.attemptCount--;

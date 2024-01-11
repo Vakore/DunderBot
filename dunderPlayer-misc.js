@@ -100,6 +100,7 @@ function equipItem(bot, itemNames, dest, afterFunc) {
         }
         bot.dunder.equipPackets.push({"slot":equippedItem, "destination":dest, "time":10});
         //attackTimer = 0;
+        //bot.dunder.attackTimer = 0;
         /*if (dest == "hand") {
             bot.heldItem = inven[equippedItem];
         }*/
@@ -194,6 +195,11 @@ function botCanHit(bot, elTarget) {
         returner = dist3d(bot.entity.position.x, 0, bot.entity.position.z, elTarget.position.x, 0, elTarget.position.z);
     }
     return returner;
+};
+
+function swingArm(bot, hand = "right") {
+    bot.dunder.attackTimer = 0;
+    bot.swingArm(hand);
 };
 
 function attackEntity(bot, target) {
@@ -511,7 +517,7 @@ function visibleFromPos(bot, pos1, pos2, zeNode) {
 
 
 
-function placeCraftingTable(bot) {
+function placeCraftingTable(bot, wantedBlock = "crafting_table") {
             let craftingCheckers = {};
             craftingCheckers[Math.floor(bot.entity.position.x - bot.physics.playerHalfWidth) + "." + Math.floor(bot.entity.position.y) + "." + Math.floor(bot.entity.position.z - bot.physics.playerHalfWidth)] = {
                 x:Math.floor(bot.entity.position.x - bot.physics.playerHalfWidth),
@@ -687,8 +693,8 @@ function placeCraftingTable(bot) {
                 }
             }
             if (placeLocation.length > 0) {
-                equipItem(bot, ["crafting_table"], "hand", () => {}/*, () => {placeBlock(bot, placeLocation[0], placeLocation[1], placeLocation[2], false, {useBlocks:["crafting_table"]})}*/);
-                setTimeout( () => {placeBlock(bot, placeLocation[0], placeLocation[1], placeLocation[2], false, {useBlocks:["crafting_table"],endFunc:function() {console.log("finished");bot.dunderTaskCompleted = true;} })}, 100);
+                equipItem(bot, [wantedBlock], "hand", () => {}/*, () => {placeBlock(bot, placeLocation[0], placeLocation[1], placeLocation[2], false, {useBlocks:["crafting_table"]})}*/);
+                setTimeout( () => {placeBlock(bot, placeLocation[0], placeLocation[1], placeLocation[2], false, {useBlocks:[wantedBlock],endFunc:function() {console.log("finished");bot.dunderTaskCompleted = true;} })}, 100);
                 console.log("pls? " + bot.heldItem);
             } else {
                 console.log("epic embed fail");
@@ -837,3 +843,110 @@ function getHighestBlockBelow(bot, entity) {
                     bot.dunder.bucketTask.pos = myFireCandidate.position.offset(0, 0, 0);
                 }
 };
+
+
+
+//TODO: system to check if nbts are different. i.e. 3 glass and 1 enchanted glass, do not attempt to optimize those two together
+function optimizeInventory(bot) {
+    var inven = bot.inventory.slots;
+    for (var i = 0; i < inven.length; i++) {
+        if (inven[i] == null) {
+            continue;
+        } else if (inven[i].name && inven[i].count < bot.registry.itemsByName[inven[i].name].stackSize) {
+            //console.log(inven[i].count + ", " + JSON.stringify());
+            for (var j = i + 1; j < inven.length; j++) {
+                if (inven[j] == null) {
+                    continue;
+                } else if (inven[j] && inven[j].name && inven[j].name == inven[i].name && inven[j].count < bot.registry.itemsByName[inven[j].name].stackSize) {
+                    console.log(inven[i].name + " : " + inven[i].count + " , " + inven[j].count);
+                    bot.simpleClick.leftMouse(i);
+                    bot.simpleClick.leftMouse(j);
+                    bot.simpleClick.leftMouse(i);
+                    //console.log(bot.quickBarSlot + ", " + i);
+                    bot.updateHeldItem();
+                    bot.dunder.network.appSendInv = true;
+                    i = Infinity;
+                    j = Infinity;
+                }
+            }
+        }
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+//taken from mineflayer/lib/plugins/inventory
+function botActivateBlock (bot, block, direction, cursorPos) {
+    direction = direction ?? new Vec3(0, 1, 0)
+    const directionNum = vectorToDirection(direction) // The packet needs a number as the direction
+    cursorPos = cursorPos ?? new Vec3(0.5, 0.5, 0.5)
+    // TODO: tell the server that we are not sneaking while doing this
+    //await bot.lookAt(block.position.offset(0.5, 0.5, 0.5), false <- this is why we are ripping this function from mineflayer)
+    // place block message
+    if (bot.supportFeature('blockPlaceHasHeldItem')) {
+      bot._client.write('block_place', {
+        location: block.position,
+        direction: directionNum,
+        heldItem: Item.toNotch(bot.heldItem),
+        cursorX: cursorPos.scaled(16).x,
+        cursorY: cursorPos.scaled(16).y,
+        cursorZ: cursorPos.scaled(16).z
+      })
+    } else if (bot.supportFeature('blockPlaceHasHandAndIntCursor')) {
+      bot._client.write('block_place', {
+        location: block.position,
+        direction: directionNum,
+        hand: 0,
+        cursorX: cursorPos.scaled(16).x,
+        cursorY: cursorPos.scaled(16).y,
+        cursorZ: cursorPos.scaled(16).z
+      })
+    } else if (bot.supportFeature('blockPlaceHasHandAndFloatCursor')) {
+      bot._client.write('block_place', {
+        location: block.position,
+        direction: directionNum,
+        hand: 0,
+        cursorX: cursorPos.x,
+        cursorY: cursorPos.y,
+        cursorZ: cursorPos.z
+      })
+    } else if (bot.supportFeature('blockPlaceHasInsideBlock')) {
+      bot._client.write('block_place', {
+        location: block.position,
+        direction: directionNum,
+        hand: 0,
+        cursorX: cursorPos.x,
+        cursorY: cursorPos.y,
+        cursorZ: cursorPos.z,
+        insideBlock: false
+      })
+    }
+
+    // swing arm animation
+    swingArm(bot)
+  }
+
+ function vectorToDirection (v) {
+    if (v.y < 0) {
+      return 0
+    } else if (v.y > 0) {
+      return 1
+    } else if (v.z < 0) {
+      return 2
+    } else if (v.z > 0) {
+      return 3
+    } else if (v.x < 0) {
+      return 4
+    } else if (v.x > 0) {
+      return 5
+    }
+    assert.ok(false, `invalid direction vector ${v}`)
+  }
