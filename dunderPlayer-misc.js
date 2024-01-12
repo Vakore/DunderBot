@@ -786,6 +786,106 @@ function distMan3d(x1, y1, z1, x2, y2, z2) {//Ideally a cheaper function
 
 
 //bucket task stuff
+function faceToPos (v) {
+    if (v == 0) {
+        return new Vec3(0, -1, 0);
+    } else if (v == 1) {
+        return new Vec3(0, 1, 0);
+    } else if (v == 2) {
+        return new Vec3(0, 0, -1);
+    } else if (v == 3) {
+        return new Vec3(0, 0, 1);
+    } else if (v == 4) {
+        return new Vec3(-1, 0, 0);
+    } else if (v == 5) {
+        return new Vec3(1, 0, 0);
+    }
+};
+
+function getEntityLiquidBlock(bot, entity) {
+    let positionsToConsult = [
+        new Vec3(entity.position.x - ((entity.width / 2) - 0.01), entity.position.y, entity.position.z - ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x - ((entity.width / 2) - 0.01), entity.position.y, entity.position.z + ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x + ((entity.width / 2) - 0.01), entity.position.y, entity.position.z - ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x + ((entity.width / 2) - 0.01), entity.position.y, entity.position.z + ((entity.width / 2) - 0.01)),
+
+        new Vec3(entity.position.x - ((entity.width / 2) - 0.01), entity.position.y + entity.height - 0.05, entity.position.z - ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x - ((entity.width / 2) - 0.01), entity.position.y + entity.height - 0.05, entity.position.z + ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x + ((entity.width / 2) - 0.01), entity.position.y + entity.height - 0.05, entity.position.z - ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x + ((entity.width / 2) - 0.01), entity.position.y + entity.height - 0.05, entity.position.z + ((entity.width / 2) - 0.01)),
+    ];
+
+    let theRaycast = null;
+    let attemptCount = 0;
+    while ((!theRaycast || theRaycast && !blockSolid(bot, theRaycast.position.x, theRaycast.position.y, theRaycast.position.z)) && attemptCount < positionsToConsult.length) { 
+        theRaycast = bot.world.raycast(bot.entity.position.offset(0, 1.62, 0), positionsToConsult[attemptCount].minus(bot.entity.position.offset(0, 1.62, 0)).normalize(), 5);
+        
+        if (theRaycast) {
+            let facePos = faceToPos(theRaycast.face);
+            //facePos.x = -facePos.x;
+            //facePos.x = -facePos.y;
+            //facePos.x = -facePos.z;
+            if (theRaycast.position.offset(facePos.x, facePos.y, facePos.z).x + 1 >= entity.position.x - (entity.width / 2) &&
+                theRaycast.position.offset(facePos.x, facePos.y, facePos.z).x <= entity.position.x + (entity.width / 2) &&
+                theRaycast.position.offset(facePos.x, facePos.y, facePos.z).z + 1 >= entity.position.z - (entity.width / 2) &&
+                theRaycast.position.offset(facePos.x, facePos.y, facePos.z).z <= entity.position.z + (entity.width / 2) &&
+                theRaycast.position.offset(facePos.x, facePos.y, facePos.z).y + 1 >= entity.position.y &&
+                theRaycast.position.offset(facePos.x, facePos.y, facePos.z).y <= entity.position.y + (entity.height)) {
+            } else {
+                theRaycast = null;
+            }
+        }
+        attemptCount++;
+    }
+    if (theRaycast && blockSolid(bot, theRaycast.position.x, theRaycast.position.y, theRaycast.position.z)) {
+        //console.log(JSON.stringify(theRaycast));//console.log(theRaycast.position + ", " + theRaycast.intersect);
+        bot.dunder.bucketTask.pos = theRaycast.position.offset(0, 0, 0);
+        bot.dunder.bucketTask.face = theRaycast.face;
+        bot.dunder.bucketTask.intersect = theRaycast.intersect;
+    }
+    return theRaycast;
+};
+
+function blockVisibleFaces(bot, block) {
+    let minY = bot.entity.position.y + 1.6;
+    let maxY = bot.entity.position.y + 1.64;
+    if (block.position.y + 1 > bot.entity.position.y + minY) {
+        bot.chat("/particle flame " + (block.position.x+0.5) + " " + (block.position.y+1) + " " + (block.position.z+0.5));
+    } else if (block.position.y < bot.entity.position.y + maxY) {
+        bot.chat("/particle flame " + (block.position.x+0.5) + " " + (block.position.y) + " " + (block.position.z+0.5));
+    }
+
+    if (block.position.x + 1 > bot.entity.position.x - 0.05) {
+        bot.chat("/particle flame " + (block.position.x+1) + " " + (block.position.y+0.5) + " " + (block.position.z+0.5));
+    } else if (block.position.x < bot.entity.position.x + 0.05) {
+        bot.chat("/particle flame " + (block.position.x) + " " + (block.position.y+0.5) + " " + (block.position.z+0.5));
+    }
+
+    if (block.position.z + 1 > bot.entity.position.z - 0.05) {
+        bot.chat("/particle flame " + (block.position.x+0.5) + " " + (block.position.y+0.5) + " " + (block.position.z+1));
+    } else if (block.position.z < bot.entity.position.z + 0.05) {
+        bot.chat("/particle flame " + (block.position.x+0.5) + " " + (block.position.y+0.5) + " " + (block.position.z));
+    }
+    
+};
+
+function getVisibleBlockNeighbors(bot, entity) {
+    let useWidth = 0.3001;
+    if (!entity) {
+        entity = bot.entity;
+    } else {
+        if (entity.name != "player") {
+            useWidth = (entity.width / 2) - 0.1;
+        }
+    }
+
+    let minY = bot.entity.position.y + 1.6;
+    let maxY = bot.entity.position.y + 1.64;
+    if (Math.floor(entity.position.y) > minY && blockSolid(bot, entity.position.x, Math.floor(entity.position.y) - 1, entity.position.z)) {
+        bot.chat();
+    }
+};
+
 function getHighestBlockBelow(bot, entity) {
     let useWidth = 0.3001;
     if (!entity) {
@@ -841,6 +941,8 @@ function getHighestBlockBelow(bot, entity) {
                 if (myFireCandidate > -1 && fireCandidates[myFireCandidate]) {
                     myFireCandidate = fireCandidates[myFireCandidate];
                     bot.dunder.bucketTask.pos = myFireCandidate.position.offset(0, 0, 0);
+                    bot.dunder.bucketTask.face = 1;
+                    bot.dunder.bucketTask.intersect = myFireCandidate.position.offset(0.5, 0.5, 0.5);
                 }
 };
 
@@ -932,21 +1034,21 @@ function botActivateBlock (bot, block, direction, cursorPos) {
 
     // swing arm animation
     swingArm(bot)
-  }
+};
 
- function vectorToDirection (v) {
+function vectorToDirection (v) {
     if (v.y < 0) {
-      return 0
+        return 0
     } else if (v.y > 0) {
-      return 1
+        return 1
     } else if (v.z < 0) {
-      return 2
+        return 2
     } else if (v.z > 0) {
-      return 3
+        return 3
     } else if (v.x < 0) {
-      return 4
+        return 4
     } else if (v.x > 0) {
-      return 5
+        return 5
     }
     assert.ok(false, `invalid direction vector ${v}`)
-  }
+};

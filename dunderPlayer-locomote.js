@@ -350,6 +350,7 @@ function doJumpSprintStuff(bot) {
                         }
                     }
                 }
+                //if (bot.entity.onGround) {console.log("!");} else {console.log("/");}
                 if (bot.entity.onGround && shouldJumpSprintOnPath && bot.dunder.lastPos.currentMove > -1 && bot.dunder.jumpTargetDelay <= 0) {
                     bot.dunder.jumpTarget = false;
                     bot.dunder.jumpTargets = [];

@@ -46,14 +46,16 @@ function botLookAt(bot, pos, priority) {
 
 
 function doBucketMode(bot) {
+        console.log(bot.dunder.bucketTask.timeout);
         //bot.dunder.state = "bucketTest";
         bot.dunder.looktimer -= (bot.dunder.looktimer > -10);
         bot.dunder.bucketTask.equipDelay -= (bot.dunder.bucketTask.equipDelay > -10);
         bot.dunder.bucketTask.blockFunc(bot, bot.dunder.bucketTask.entity);
             //do bucket task stuff
         //console.log(bot.dunder.bucketTask.entity);
-        if (bot.dunder.bucketTask.pos && dist3d(bot.dunder.oldPosition.x, bot.dunder.oldPosition.y + 1.62, bot.dunder.oldPosition.z, bot.dunder.bucketTask.pos.x + 0.5, bot.dunder.bucketTask.pos.y + 1, bot.dunder.bucketTask.pos.z + 0.5) > 5.5) {
-            botLookAt(bot, bot.dunder.bucketTask.pos.offset(0.5, 1.0, 0.5), 100);
+        let facePos = bot.dunder.bucketTask.intersect;//faceToPos(bot.dunderTask.face);//we need face to closest corner
+        if (bot.dunder.bucketTask.pos && dist3d(bot.dunder.oldPosition.x, bot.dunder.oldPosition.y + 1.62, bot.dunder.oldPosition.z, bot.dunder.bucketTask.intersect.x, bot.dunder.bucketTask.intersect.y, bot.dunder.bucketTask.intersect.z) > 5.5) {
+            botLookAt(bot, bot.dunder.bucketTask.intersect, 150);
             bot.dunder.bucketTask.active = false;//might need to disable this for water clutching, maybe make it a toggle in dunder.bucketTask
         } else if (bot.dunder.bucketTask.bucketCondition(bot)) {
                 if (bot.dunder.bucketTask.pos) {
@@ -61,7 +63,7 @@ function doBucketMode(bot) {
                         equipItem(bot, [bot.dunder.bucketTask.bucket]);
                         bot.dunder.bucketTask.equipDelay = 20;
                     }
-                    botLookAt(bot, bot.dunder.bucketTask.pos.offset(0.5, 1.0, 0.5), 100);
+                    botLookAt(bot, bot.dunder.bucketTask.intersect, 100);
                     //console.log(bot.entity.pitch + ", " + bot.dunder.cursorBlock);
                 }
                 if (bot.dunder.cursorBlock && bot.dunder.bucketTask.pos) {
@@ -79,8 +81,9 @@ function doBucketMode(bot) {
                 }
 
                 if (monTester) {
+                    console.log("place down: " + JSON.stringify(monTester));
                     digBlock(bot, monTester.position.x, monTester.position.y, monTester.position.z);
-                    bot.dunder.bucketTask.timeout += 2;
+                    bot.dunder.bucketTask.timeout++;
                 } else if (bot.dunder.bucketTask.pos && bot.dunder.cursorBlock && bot.dunder.cursorBlock.position.equals(bot.dunder.bucketTask.pos) && dist3d(0, (bot.dunder.oldPosition.y + 1.62), 0, 0, bot.dunder.cursorBlock.position.y+1, 0) < 5 && bot.heldItem && (bot.heldItem && bot.heldItem.name == bot.dunder.bucketTask.bucket) && bot.dunder.looktimer < 0) {
                     //bot.chat("/particle flame " + bot.dunder.oldPosition.x + " " + bot.dunder.oldPosition.y + " " + bot.dunder.oldPosition.z);
                     //bot.chat("/particle minecraft:soul_fire_flame ~ ~ ~");
@@ -96,7 +99,7 @@ function doBucketMode(bot) {
                 } //else if (!bot.dunder.bucketTask.pos) {console.log("no blocks");}
         } else if (bot.dunder.bucketTask.bucketCondition2(bot) && bot.heldItem && bot.heldItem.name == 'bucket') {
             var waterBlock = null;
-            if (bot.dunder.bucketTask.bucket == "water_bucket") {
+            if (bot.dunder.bucketTask.bucket == "water_bucket" /*&& Math.random() > 0.5*/) {
                 waterBlock = bot.findBlock({
                     matching: (block) => (block.stateId === 80),//thank you u9g
                     maxDistance: 7,
@@ -144,8 +147,9 @@ function doBucketMode(bot) {
             }
 
             if (monTester) {
+                console.log("pick up: " + JSON.stringify(monTester));
                 digBlock(bot, monTester.position.x, monTester.position.y, monTester.position.z);
-                bot.dunder.bucketTask.timeout += 2;
+                bot.dunder.bucketTask.timeout++;
             } else if (/*bot.dunder.cursorBlock*/waterBlock && raycastedLiquid && raycastedLiquid.position.equals(waterBlock.position) && bot.heldItem && (bot.heldItem.name == 'bucket') && bot.dunder.looktimer < 0) {
                 bot.activateItem(false);
                 swingArm(bot);
@@ -153,15 +157,18 @@ function doBucketMode(bot) {
                 bot.dunder.bucketTask.timeout = 20;
                 bot.dunder.bucketTask.attemptCount--;
                 if (bot.dunder.bucketTask.attemptCount <= 0) {
+                    console.log("failed bucketTask due to not picking up in 3 attempts");
                     bot.dunder.bucketTask.active = false;
                     bot.dunder.bucketTask.attemptCount = 3;
                     bot.dunder.masterState = bot.dunder.bucketTask.lastState;
                 }
             } else if (!waterBlock) {
-                bot.dunder.bucketTask.active = false;
-                bot.dunder.masterState = bot.dunder.bucketTask.lastState;
+                bot.dunder.bucketTask.timeout -= 4;
+                //bot.dunder.bucketTask.active = false;
+                //bot.dunder.masterState = bot.dunder.bucketTask.lastState;
             }
         } else if (hasItemCount(bot, (name) => {return name == bot.dunder.bucketTask.bucket;}) >= bot.dunder.bucketTask.ogCount && (bot.dunder.oldOnGround || bot.dunder.oldIsInWater || bot.dunder.oldIsInLava)) {
+            console.log("valid: " + hasItemCount(bot, (name) => {return name == bot.dunder.bucketTask.bucket;}) + ", " + bot.dunder.bucketTask.ogCount);
             bot.dunder.bucketTask.active = false;
             if (bot.dunder.masterState == "bucketTest") {
                 bot.dunder.masterState = bot.dunder.bucketTask.lastState;
@@ -171,6 +178,8 @@ function doBucketMode(bot) {
         bot.dunder.botMove.sneak = false;
         if (bot.dunder.oldOnGround || bot.dunder.oldIsInWater || bot.dunder.oldIsInLava) {bot.dunder.bucketTask.timeout--;}
         if (bot.dunder.bucketTask.timeout < 0) {
+            console.log(bot.dunder.bucketTask.lastState);
             bot.dunder.masterState = bot.dunder.bucketTask.lastState;
+            bot.dunder.bucketTask.active = false;
         }
 };

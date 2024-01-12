@@ -250,7 +250,7 @@ function makeBots(cbtm) {
         console.log(bots[cbtm].dunder.currentWindow.id);
         console.log(bots[cbtm].dunder.currentWindow.type);
     });
-
+    setTimeout((bot) => {bots[cbtm].dunder.currentWindow = bots[cbtm].inventory;}, 1000, bots[cbtm]);
     bots[cbtm].dunder = {
         "currentWindow":bots[cbtm].inventory,
 
@@ -273,7 +273,7 @@ function makeBots(cbtm) {
 
         "spawned":false,
 
-        "masterState":"none",//idle
+        "masterState":"idle",//idle
         "state":"PvE",
 
         "consumeTimer":0,
@@ -315,6 +315,8 @@ function makeBots(cbtm) {
         "bucketTask":{
             lastState:"idle",
             pos:new Vec3(0, 0, 0),
+            face:0,
+            intersect:new Vec3(0, 0, 0),
             bucket:"water_bucket",//null, water, lava, empty
             pickupAfterDone:null,//null, water, lava
             equipDelay:-10,
@@ -491,7 +493,7 @@ function makeBots(cbtm) {
             bots[cbtm].dunder.oldIsInWater = bots[cbtm].entity.isInWater;
             bots[cbtm].dunder.oldIsInLava = bots[cbtm].entity.isInLava;
 
-            if (bot.dunder.bucketTask.active) {console.log("bucketting ");}
+            //if (bot.dunder.bucketTask.active) {console.log("bucketting ");}
             if (bots[cbtm].dunderTaskCompleted && bots[cbtm].dunderTasks.length > 0) {
                 bots[cbtm].dunderTaskCompleted = false;
                 acceptDunderTask(bots[cbtm], bots[cbtm].dunderTasks[0][0], bots[cbtm].dunderTasks[0][1]);
@@ -947,6 +949,7 @@ for (var i in bot.entities) {
             bot.dunder.bucketTask.pos = null;
             getHighestBlockBelow(bot);
             if (bot.dunder.bucketTask.pos) {
+                bot.dunder.bucketTask.equipDelay = 20;
                 equipItem(bot, ["water_bucket"]);
                 bot.dunder.bucketTask.lastState = bot.dunder.masterState;
                 bot.dunder.masterState = "bucketTest";
@@ -1086,13 +1089,15 @@ for (var i in bot.entities) {
                     } else if (target.name == "pig" && !parseEntityAnimation("pig", target.metadata[0])[0] && hasItem(bot, ["lava_bucket"])) {
                         if (!bot.dunder.bucketTask.active/*bot.dunder.onFire && bot.entity.onGround || true*/) {
                             bot.dunder.bucketTask.pos = null;
-                            getHighestBlockBelow(bot, target);
+                            //getHighestBlockBelow(bot, target);
+                            getEntityLiquidBlock(bot, target);
                             if (bot.dunder.bucketTask.pos && dist3d(bot.dunder.oldPosition.x, bot.dunder.oldPosition.y + 1.62, bot.dunder.oldPosition.z, bot.dunder.bucketTask.pos.x + 0.5, bot.dunder.bucketTask.pos.y + 1, bot.dunder.bucketTask.pos.z + 0.5) < 5.5) {
+                                bot.dunder.bucketTask.equipDelay = 20;
                                 equipItem(bot, ["lava_bucket"]);
                                 bot.dunder.bucketTask.lastState = bot.dunder.masterState;
                                 bot.dunder.masterState = "bucketTest";
                                 bot.dunder.state = "bucketTest";
-                                bot.dunder.bucketTask.blockFunc = getHighestBlockBelow;
+                                bot.dunder.bucketTask.blockFunc = getEntityLiquidBlock;
                                 bot.dunder.bucketTask.entity = target;
                                 bot.dunder.bucketTask.bucket = "lava_bucket";
                                 bot.dunder.bucketTask.bucketCondition = function(bot) {return (!parseEntityAnimation("pig", bot.dunder.bucketTask.entity.metadata[0])[0] && bot.dunder.bucketTask.entity.metadata[9] > 0 && bot.heldItem && bot.heldItem.name != "bucket");};
