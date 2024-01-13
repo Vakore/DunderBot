@@ -32,6 +32,14 @@ function dunderTaskManager(bot) {
 
 function dunderTaskInitialize(bot) {
     dunderTaskLog("Initiallizing tasks!");
+    createDunderTask(bot, "craftPlanks");
+    //createDunderTask(bot, "craft", {"name":"wooden_pickaxe"});
+
+    //createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("_log") /*&& blockExposed(bot, block)*/), "distance":120, "count":20, "useExtraInfo":true, "finishCondition":2, "itemCondition":function(itemName) {return itemName.includes("_log");}});
+
+    //createDunderTask(bot, "openContainer", {"name":"chest"});
+    //createDunderTask(bot, "openContainer", {"name":"hopper"});
+    //createDunderTask(bot, "closeWindow");
     /*for (var i in bot.registry) {
     console.log(i);
     }*/
@@ -49,42 +57,51 @@ function dunderTaskInitialize(bot) {
     //createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("_log") /*&& blockExposed(bot, block)*/), "distance":30, "count":20, "useExtraInfo":true, "finishCondition":2, "itemCondition":function(itemName) {return itemName.includes("_log");}});
     /*createDunderTask(bot, "setMasterState", {"masterState":"idle"});*/
 
-/*createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("oak_log")), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName.includes("oak_log");}});
-createDunderTask(bot, "mine", {"block":(block) => (block.name == "stone"), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName == "cobblestone";}});createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("oak_log")), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName.includes("oak_log");}});
-createDunderTask(bot, "mine", {"block":(block) => (block.name == "stone"), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName == "cobblestone";}});createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("oak_log")), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName.includes("oak_log");}});
+/*createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("birch_log")), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName.includes("birch_log");}});
+createDunderTask(bot, "mine", {"block":(block) => (block.name == "stone"), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName == "cobblestone";}});createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("birch_log")), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName.includes("birch_log");}});
+createDunderTask(bot, "mine", {"block":(block) => (block.name == "stone"), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName == "cobblestone";}});createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("birch_log")), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName.includes("birch_log");}});
 createDunderTask(bot, "mine", {"block":(block) => (block.name == "stone"), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName == "cobblestone";}});
 createDunderTask(bot, "setMasterState", {"masterState":"idle"});*/
 
-    createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("oak_log")), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName.includes("oak_log");}});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
+    /*createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("birch_log")), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName.includes("birch_log");}});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
     createDunderTask(bot, "craft", {"name":"crafting_table"});
     createDunderTask(bot, "craft", {"name":"stick"});
     createDunderTask(bot, "placeCrafting");
     createDunderTask(bot, "craft", {"name":"wooden_pickaxe"});
 
     createDunderTask(bot, "mine", {"block":(block) => (block.name == "crafting_table"), "distance":30, "count":1, "useExtraInfo":true, "finishCondition":1, "itemCondition":function(itemName) {return itemName == "crafting_table";}});
-    createDunderTask(bot, "mine", {"block":(block) => (block.name == "stone"), "distance":30, "count":3, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName == "cobblestone";}});
+    createDunderTask(bot, "mine", {"block":(block) => (block.name == "stone"), "distance":30, "count":16, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName == "cobblestone";}});
 
     createDunderTask(bot, "placeCrafting");
     createDunderTask(bot, "craft", {"name":"stone_axe"});
     createDunderTask(bot, "mine", {"block":(block) => (block.name == "crafting_table"), "distance":30, "count":1, "useExtraInfo":true, "finishCondition":1, "itemCondition":function(itemName) {return itemName == "crafting_table";}});
 
-    createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("oak_log")), "distance":30, "count":10, "useExtraInfo":true, "finishCondition":10, "itemCondition":function(itemName) {return itemName.includes("oak_log");}});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
-    createDunderTask(bot, "craft", {"name":"oak_planks"});
+    createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("birch_log")), "distance":30, "count":10, "useExtraInfo":true, "finishCondition":10, "itemCondition":function(itemName) {return itemName.includes("birch_log");}});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
+    createDunderTask(bot, "craft", {"name":"birch_planks"});
     createDunderTask(bot, "placeCrafting");
-    createDunderTask(bot, "craft", {"name":"oak_door"});
-    createDunderTask(bot, "equip", {"items":["oak_door"],destination:"off-hand"});
-    createDunderTask(bot, "equip", {"items":["stone_axe"],destination:"hand"});
+    createDunderTask(bot, "craft", {"name":"stick"});
+    createDunderTask(bot, "craft", {"name":"stick"});
+    createDunderTask(bot, "craft", {"name":"stone_pickaxe"});
+    createDunderTask(bot, "mine", {"block":(block) => (block.name == "crafting_table"), "distance":30, "count":1, "useExtraInfo":true, "finishCondition":1, "itemCondition":function(itemName) {return itemName == "crafting_table";}});
+    createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("coal_ore")), "distance":64, "count":8, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName.includes("coal");}});
+    createDunderTask(bot, "mine", {"block":(block) => (block.name.includes("iron_ore")), "distance":64, "count":8, "useExtraInfo":true, "finishCondition":3, "itemCondition":function(itemName) {return itemName.includes("coal");}});
+    createDunderTask(bot, "placeCrafting");
+    createDunderTask(bot, "craft", {"name":"furnace"});
+    createDunderTask(bot, "placeFurnace");*/
+    //createDunderTask(bot, "craft", {"name":"birch_door"});
+    //createDunderTask(bot, "equip", {"items":["birch_door"],destination:"off-hand"});
+    //createDunderTask(bot, "equip", {"items":["stone_axe"],destination:"hand"});
     bot.dunderTaskCompleted = true;
 };

@@ -21,6 +21,9 @@ function hasItemCount(bot, match) {
             returner += inven[i].count;
         }
     }
+    if (bot.inventory.selectedItem && match(bot.inventory.selectedItem.name)) {
+        returner += bot.inventory.selectedItem.count;
+    }
     return returner;
 };
 
@@ -54,6 +57,7 @@ function afterFuncAfterFunc(bot, equippedItem, dest, e) {
 };
 
 function equipItem(bot, itemNames, dest, afterFunc) {
+    bot.updateHeldItem();
     var finalItemName = null;
     //console.log(bot.inventory);
     var inven = bot.inventory.items();
@@ -100,6 +104,7 @@ function equipItem(bot, itemNames, dest, afterFunc) {
         }
         bot.dunder.equipPackets.push({"slot":equippedItem, "destination":dest, "time":10});
         //attackTimer = 0;
+        //bot.dunder.attackTimer = 0;
         /*if (dest == "hand") {
             bot.heldItem = inven[equippedItem];
         }*/
@@ -194,6 +199,11 @@ function botCanHit(bot, elTarget) {
         returner = dist3d(bot.entity.position.x, 0, bot.entity.position.z, elTarget.position.x, 0, elTarget.position.z);
     }
     return returner;
+};
+
+function swingArm(bot, hand = "right") {
+    bot.dunder.attackTimer = 0;
+    bot.swingArm(hand);
 };
 
 function attackEntity(bot, target) {
@@ -354,16 +364,18 @@ function placeBlock(bot, x, y, z, placeBackwards, extraOptions = {}) {
     }
     for (var i = 0; i < bot.dunder.blockPackets.length; i++) {
         if (bot.dunder.blockPackets[i].x == x && bot.dunder.blockPackets[i].y == y && bot.dunder.blockPackets[i].z == z) {
-            canPlace = false;
+            //canPlace = false;
             i = bot.dunder.blockPackets.length;
         }
     }
     if (bot.targetDigBlock /*|| !bot.entity.heldItem*/) {canPlace = false;}
     if (canPlace) {
-        bot.dunder.blockPackets.push({"x":x,"y":y,"z":z,"endFunc":extraOptions.endFunc});//used in case of weirdness from the server
+        //bot.dunder.blockPackets.push({"x":x,"y":y,"z":z,"endFunc":extraOptions.endFunc});//used in case of weirdness from the server
         botLookAt(bot, new Vec3(x, y, z), 100);
         //attackTimer = 0;
+        console.log("asdf 1");
         bot.placeBlock(bot.blockAt(new Vec3(x, y, z)), placeOffSet).then(function(e) {
+            console.log("ye");
             //attackTimer = 0;
             //console.log(bot.entity.position);
             for (var i = 0; i < bot.dunder.blockPackets.length; i++) {
@@ -376,6 +388,7 @@ function placeBlock(bot, x, y, z, placeBackwards, extraOptions = {}) {
                 }
             }
         }).catch(function(e) {console.log("place block error: \n" + e);});
+        console.log("asdf 2");
         var swingArmPls = true;
         for (var i = 0; i < bot.dunder.blockPackets.length; i++) {
             if (bot.dunder.blockPackets[i].x == x && bot.dunder.blockPackets[i].y == y && bot.dunder.blockPackets[i].z == z) {
@@ -511,7 +524,7 @@ function visibleFromPos(bot, pos1, pos2, zeNode) {
 
 
 
-function placeCraftingTable(bot) {
+function placeCraftingTable(bot, wantedBlock = "crafting_table") {
             let craftingCheckers = {};
             craftingCheckers[Math.floor(bot.entity.position.x - bot.physics.playerHalfWidth) + "." + Math.floor(bot.entity.position.y) + "." + Math.floor(bot.entity.position.z - bot.physics.playerHalfWidth)] = {
                 x:Math.floor(bot.entity.position.x - bot.physics.playerHalfWidth),
@@ -687,8 +700,8 @@ function placeCraftingTable(bot) {
                 }
             }
             if (placeLocation.length > 0) {
-                equipItem(bot, ["crafting_table"], "hand", () => {}/*, () => {placeBlock(bot, placeLocation[0], placeLocation[1], placeLocation[2], false, {useBlocks:["crafting_table"]})}*/);
-                setTimeout( () => {placeBlock(bot, placeLocation[0], placeLocation[1], placeLocation[2], false, {useBlocks:["crafting_table"],endFunc:function() {console.log("finished");bot.dunderTaskCompleted = true;} })}, 100);
+                equipItem(bot, [wantedBlock], "hand", () => {}/*, () => {placeBlock(bot, placeLocation[0], placeLocation[1], placeLocation[2], false, {useBlocks:["crafting_table"]})}*/);
+                setTimeout( () => {placeBlock(bot, placeLocation[0], placeLocation[1], placeLocation[2], false, {useBlocks:[wantedBlock],endFunc:function() {console.log("finished");bot.dunderTaskCompleted = true;} })}, 100);
                 console.log("pls? " + bot.heldItem);
             } else {
                 console.log("epic embed fail");
@@ -780,6 +793,106 @@ function distMan3d(x1, y1, z1, x2, y2, z2) {//Ideally a cheaper function
 
 
 //bucket task stuff
+function faceToPos (v) {
+    if (v == 0) {
+        return new Vec3(0, -1, 0);
+    } else if (v == 1) {
+        return new Vec3(0, 1, 0);
+    } else if (v == 2) {
+        return new Vec3(0, 0, -1);
+    } else if (v == 3) {
+        return new Vec3(0, 0, 1);
+    } else if (v == 4) {
+        return new Vec3(-1, 0, 0);
+    } else if (v == 5) {
+        return new Vec3(1, 0, 0);
+    }
+};
+
+function getEntityLiquidBlock(bot, entity) {
+    let positionsToConsult = [
+        new Vec3(entity.position.x - ((entity.width / 2) - 0.01), entity.position.y, entity.position.z - ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x - ((entity.width / 2) - 0.01), entity.position.y, entity.position.z + ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x + ((entity.width / 2) - 0.01), entity.position.y, entity.position.z - ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x + ((entity.width / 2) - 0.01), entity.position.y, entity.position.z + ((entity.width / 2) - 0.01)),
+
+        new Vec3(entity.position.x - ((entity.width / 2) - 0.01), entity.position.y + entity.height - 0.05, entity.position.z - ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x - ((entity.width / 2) - 0.01), entity.position.y + entity.height - 0.05, entity.position.z + ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x + ((entity.width / 2) - 0.01), entity.position.y + entity.height - 0.05, entity.position.z - ((entity.width / 2) - 0.01)),
+        new Vec3(entity.position.x + ((entity.width / 2) - 0.01), entity.position.y + entity.height - 0.05, entity.position.z + ((entity.width / 2) - 0.01)),
+    ];
+
+    let theRaycast = null;
+    let attemptCount = 0;
+    while ((!theRaycast || theRaycast && !blockSolid(bot, theRaycast.position.x, theRaycast.position.y, theRaycast.position.z)) && attemptCount < positionsToConsult.length) { 
+        theRaycast = bot.world.raycast(bot.entity.position.offset(0, 1.62, 0), positionsToConsult[attemptCount].minus(bot.entity.position.offset(0, 1.62, 0)).normalize(), 5);
+        
+        if (theRaycast) {
+            let facePos = faceToPos(theRaycast.face);
+            //facePos.x = -facePos.x;
+            //facePos.x = -facePos.y;
+            //facePos.x = -facePos.z;
+            if (theRaycast.position.offset(facePos.x, facePos.y, facePos.z).x + 1 >= entity.position.x - (entity.width / 2) &&
+                theRaycast.position.offset(facePos.x, facePos.y, facePos.z).x <= entity.position.x + (entity.width / 2) &&
+                theRaycast.position.offset(facePos.x, facePos.y, facePos.z).z + 1 >= entity.position.z - (entity.width / 2) &&
+                theRaycast.position.offset(facePos.x, facePos.y, facePos.z).z <= entity.position.z + (entity.width / 2) &&
+                theRaycast.position.offset(facePos.x, facePos.y, facePos.z).y + 1 >= entity.position.y &&
+                theRaycast.position.offset(facePos.x, facePos.y, facePos.z).y <= entity.position.y + (entity.height)) {
+            } else {
+                theRaycast = null;
+            }
+        }
+        attemptCount++;
+    }
+    if (theRaycast && blockSolid(bot, theRaycast.position.x, theRaycast.position.y, theRaycast.position.z)) {
+        //console.log(JSON.stringify(theRaycast));//console.log(theRaycast.position + ", " + theRaycast.intersect);
+        bot.dunder.bucketTask.pos = theRaycast.position.offset(0, 0, 0);
+        bot.dunder.bucketTask.face = theRaycast.face;
+        bot.dunder.bucketTask.intersect = theRaycast.intersect;
+    }
+    return theRaycast;
+};
+
+function blockVisibleFaces(bot, block) {
+    let minY = bot.entity.position.y + 1.6;
+    let maxY = bot.entity.position.y + 1.64;
+    if (block.position.y + 1 > bot.entity.position.y + minY) {
+        bot.chat("/particle flame " + (block.position.x+0.5) + " " + (block.position.y+1) + " " + (block.position.z+0.5));
+    } else if (block.position.y < bot.entity.position.y + maxY) {
+        bot.chat("/particle flame " + (block.position.x+0.5) + " " + (block.position.y) + " " + (block.position.z+0.5));
+    }
+
+    if (block.position.x + 1 > bot.entity.position.x - 0.05) {
+        bot.chat("/particle flame " + (block.position.x+1) + " " + (block.position.y+0.5) + " " + (block.position.z+0.5));
+    } else if (block.position.x < bot.entity.position.x + 0.05) {
+        bot.chat("/particle flame " + (block.position.x) + " " + (block.position.y+0.5) + " " + (block.position.z+0.5));
+    }
+
+    if (block.position.z + 1 > bot.entity.position.z - 0.05) {
+        bot.chat("/particle flame " + (block.position.x+0.5) + " " + (block.position.y+0.5) + " " + (block.position.z+1));
+    } else if (block.position.z < bot.entity.position.z + 0.05) {
+        bot.chat("/particle flame " + (block.position.x+0.5) + " " + (block.position.y+0.5) + " " + (block.position.z));
+    }
+    
+};
+
+function getVisibleBlockNeighbors(bot, entity) {
+    let useWidth = 0.3001;
+    if (!entity) {
+        entity = bot.entity;
+    } else {
+        if (entity.name != "player") {
+            useWidth = (entity.width / 2) - 0.1;
+        }
+    }
+
+    let minY = bot.entity.position.y + 1.6;
+    let maxY = bot.entity.position.y + 1.64;
+    if (Math.floor(entity.position.y) > minY && blockSolid(bot, entity.position.x, Math.floor(entity.position.y) - 1, entity.position.z)) {
+        bot.chat();
+    }
+};
+
 function getHighestBlockBelow(bot, entity) {
     let useWidth = 0.3001;
     if (!entity) {
@@ -792,42 +905,42 @@ function getHighestBlockBelow(bot, entity) {
     //console.log(useWidth);
                 var fireCandidates = [false, false, false, false];
                 for (var i = 0; i < 23; i++) {
-                    if (Math.floor(entity.position.y) - i <= -64) {
+                    if (Math.floor(entity.position.y + 1.62 - i) <= -64) {
                         i = 23;
                         break;
                     }
                     if (!fireCandidates[0] && blockSolid(bot, Math.floor(entity.position.x - useWidth),
-                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.y + 1.62 - i),
                                  Math.floor(entity.position.z - useWidth))) {
                         fireCandidates[0] = bot.blockAt(new Vec3(Math.floor(entity.position.x - useWidth),
-                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.y + 1.62 - i),
                                  Math.floor(entity.position.z - useWidth)));
                     }
                     if (!fireCandidates[1] && blockSolid(bot, Math.floor(entity.position.x + useWidth),
-                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.y + 1.62 - i),
                                  Math.floor(entity.position.z - useWidth))) {
                         fireCandidates[1] = bot.blockAt(new Vec3(Math.floor(entity.position.x + useWidth),
-                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.y + 1.62 - i),
                                  Math.floor(entity.position.z - useWidth)));
                     }
                     if (!fireCandidates[2] && blockSolid(bot, Math.floor(entity.position.x - useWidth),
-                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.y + 1.62 - i),
                                  Math.floor(entity.position.z + useWidth))) {
                         fireCandidates[2] = bot.blockAt(new Vec3(Math.floor(entity.position.x - useWidth),
-                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.y + 1.62 - i),
                                  Math.floor(entity.position.z + useWidth)));
                     }
                     if (!fireCandidates[3] && blockSolid(bot, Math.floor(entity.position.x + 0.301),
-                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.y + 1.62 - i),
                                  Math.floor(entity.position.z + useWidth))) {//(!!!)Probably need to account for negatives or something
                         fireCandidates[3] = bot.blockAt(new Vec3(Math.floor(entity.position.x + useWidth),
-                                 Math.floor(entity.position.y) - i,
+                                 Math.floor(entity.position.y + 1.62 - i),
                                  Math.floor(entity.position.z + useWidth)));
                     }
                 }
                 var myFireCandidate = -1;
                 for (var i = 0; i < fireCandidates.length; i++) {
-                    if (fireCandidates[i] && (myFireCandidate == -1 || fireCandidates[i].position.y > fireCandidates[myFireCandidate].position.y)) {
+                    if (fireCandidates[i] && (myFireCandidate == -1 || fireCandidates[i].position.y > fireCandidates[myFireCandidate].position.y && fireCandidates[i].position.y+1 <= entity.position.y ||  fireCandidates[i].position.y+1 <= entity.position.y && fireCandidates[myFireCandidate].position.y+1 > entity.position.y)) {
                         myFireCandidate = i;
                     }
                 }
@@ -835,5 +948,114 @@ function getHighestBlockBelow(bot, entity) {
                 if (myFireCandidate > -1 && fireCandidates[myFireCandidate]) {
                     myFireCandidate = fireCandidates[myFireCandidate];
                     bot.dunder.bucketTask.pos = myFireCandidate.position.offset(0, 0, 0);
+                    bot.dunder.bucketTask.face = 1;
+                    bot.dunder.bucketTask.intersect = myFireCandidate.position.offset(0.5, 0.5, 0.5);
                 }
+};
+
+
+
+//TODO: system to check if nbts are different. i.e. 3 glass and 1 enchanted glass, do not attempt to optimize those two together
+function optimizeInventory(bot) {
+    var inven = bot.inventory.slots;
+    for (var i = 0; i < inven.length; i++) {
+        if (inven[i] == null) {
+            continue;
+        } else if (inven[i].name && inven[i].count < bot.registry.itemsByName[inven[i].name].stackSize) {
+            //console.log(inven[i].count + ", " + JSON.stringify());
+            for (var j = i + 1; j < inven.length; j++) {
+                if (inven[j] == null) {
+                    continue;
+                } else if (inven[j] && inven[j].name && inven[j].name == inven[i].name && inven[j].count < bot.registry.itemsByName[inven[j].name].stackSize) {
+                    console.log(inven[i].name + " : " + inven[i].count + " , " + inven[j].count);
+                    bot.simpleClick.leftMouse(i);
+                    bot.simpleClick.leftMouse(j);
+                    bot.simpleClick.leftMouse(i);
+                    //console.log(bot.quickBarSlot + ", " + i);
+                    bot.updateHeldItem();
+                    bot.dunder.network.appSendInv = true;
+                    i = Infinity;
+                    j = Infinity;
+                }
+            }
+        }
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+//taken from mineflayer/lib/plugins/inventory
+function botActivateBlock (bot, block, direction, cursorPos) {
+    direction = direction ?? new Vec3(0, 1, 0)
+    const directionNum = vectorToDirection(direction) // The packet needs a number as the direction
+    cursorPos = cursorPos ?? new Vec3(0.5, 0.5, 0.5)
+    // TODO: tell the server that we are not sneaking while doing this
+    //await bot.lookAt(block.position.offset(0.5, 0.5, 0.5), false <- this is why we are ripping this function from mineflayer)
+    // place block message
+    if (bot.supportFeature('blockPlaceHasHeldItem')) {
+      bot._client.write('block_place', {
+        location: block.position,
+        direction: directionNum,
+        heldItem: Item.toNotch(bot.heldItem),
+        cursorX: cursorPos.scaled(16).x,
+        cursorY: cursorPos.scaled(16).y,
+        cursorZ: cursorPos.scaled(16).z
+      })
+    } else if (bot.supportFeature('blockPlaceHasHandAndIntCursor')) {
+      bot._client.write('block_place', {
+        location: block.position,
+        direction: directionNum,
+        hand: 0,
+        cursorX: cursorPos.scaled(16).x,
+        cursorY: cursorPos.scaled(16).y,
+        cursorZ: cursorPos.scaled(16).z
+      })
+    } else if (bot.supportFeature('blockPlaceHasHandAndFloatCursor')) {
+      bot._client.write('block_place', {
+        location: block.position,
+        direction: directionNum,
+        hand: 0,
+        cursorX: cursorPos.x,
+        cursorY: cursorPos.y,
+        cursorZ: cursorPos.z
+      })
+    } else if (bot.supportFeature('blockPlaceHasInsideBlock')) {
+      bot._client.write('block_place', {
+        location: block.position,
+        direction: directionNum,
+        hand: 0,
+        cursorX: cursorPos.x,
+        cursorY: cursorPos.y,
+        cursorZ: cursorPos.z,
+        insideBlock: false
+      })
+    }
+
+    // swing arm animation
+    swingArm(bot)
+};
+
+function vectorToDirection (v) {
+    if (v.y < 0) {
+        return 0
+    } else if (v.y > 0) {
+        return 1
+    } else if (v.z < 0) {
+        return 2
+    } else if (v.z > 0) {
+        return 3
+    } else if (v.x < 0) {
+        return 4
+    } else if (v.x > 0) {
+        return 5
+    }
+    assert.ok(false, `invalid direction vector ${v}`)
 };
