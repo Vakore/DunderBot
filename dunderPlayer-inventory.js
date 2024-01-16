@@ -34,8 +34,8 @@ app.post('/write', function (req, res) {
     console.log(bots[0].foodSaturation);
     console.log(bots[0].food);*/
     //console.log(bots[0].oxygenLevel);
-    if (bots[0].dunder.network.appSendInv) {
-        myObj = JSON.parse(JSON.stringify(bots[0].inventory));
+    if (bots[0].dunder.network.appSendInv && bots[0].dunder.currentWindow) {
+        myObj = JSON.parse(JSON.stringify(bots[0].dunder.currentWindow));
         bots[0].dunder.network.appSendInv = false;
     } else {
         myObj = {};
@@ -63,8 +63,22 @@ app.post('/write', function (req, res) {
         //for (var i = 0; i < Math.floor(req.body.clickRequests.length / 2) * 2; i += 2) {
         for (var i = 0; i < Math.floor(req.body.clickRequests.length); i++) {
             //setTimeout(() => {
-                console.log("asdf, " + req.body.clickRequests[i]);
-                bots[0].simpleClick.leftMouse(Number(req.body.clickRequests[i]));
+                console.log("clickRequest, " + req.body.clickRequests[i]);
+                bots[0].dunder.network.appSendInv = true;
+                if (req.body.clickRequests[i][0] == 0) {
+                    bots[0].simpleClick.leftMouse(Number(req.body.clickRequests[i][1]));
+                } else if (req.body.clickRequests[i][0] == 1) {
+                    bots[0].simpleClick.rightMouse(Number(req.body.clickRequests[i][1]));
+                } else if (req.body.clickRequests[i][0] == 2) {
+                    console.log("tossinga");
+                    let leStack = bots[0].dunder.currentWindow.slots[Number(req.body.clickRequests[i][1])];
+                    if (leStack != null || leStack && leStack.name && leStack.name != "air") {
+                        bots[0].tossStack(leStack);
+                        swingArm(bots[0]);
+                    }
+                    console.log("tossingb");
+                }
+                bot.updateHeldItem();
                 //bots[0].simpleClick.leftMouse(bots[0].inventory[req.body.clickRequests[i]]);
             //}, i*50)
             //console.log(JSON.stringify(bots[0].inventory));

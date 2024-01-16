@@ -1,6 +1,18 @@
+//File for following a path creating with dunderPlayer-pathfind
+/*
+TODO edge cases
+Beginning path when on top of grass path causes mining to occur, possibly other not full blocks such as soul sand as well
+leftover mining after freeing self from stuck in block(most commonly cobble generated from water)
+*/
+
 var busyBuilding = false;
 function takeCareOfBlock (bot, myMove, dontAct) {
             //console.log(bot.entity.isInWater);
+            //constantly look down when digging down
+            if (myMove.y + 0.2 < bot.entity.position.y && myMove.y - bot.dunder.lastPos.y == -1 && myMove.x == bot.dunder.lastPos.x && myMove.z == bot.dunder.lastPos.z) {
+                bot.dunder.lookY = bot.entity.position.y - 20;
+            }
+
             if (bot.entity.onGround |
                 bot.entity.isInWater |
                 bot.entity.isInLava |
@@ -10,6 +22,7 @@ function takeCareOfBlock (bot, myMove, dontAct) {
                 dist3d(bot.entity.position.x, 0, bot.entity.position.z, myMove.x + 0.5, 0, myMove.z + 0.5) <= Math.sqrt(0.5) &&
                 canDigBlock(bot, myMove.x, myMove.y, myMove.z) &&
                 !bot.targetDigBlock) {
+                bot.dunder.lookY = bot.entity.position.y - 20;
                 equipTool(bot, myMove.x, myMove.y, myMove.z);
                 digBlock(bot, myMove.x, myMove.y, myMove.z);
                 bot.dunder.isDigging = 2;
@@ -141,6 +154,7 @@ function takeCareOfBlock (bot, myMove, dontAct) {
                     equipItem(bot, garbageBlocks, "hand");
                     //holdWeapon = false;
                     placeBlock(bot, myMove.x, myMove.y - 1, myMove.z, false/*(myMove.y != bot.dunder.lastPos.y) ? Math.atan2(myMove.x - bot.dunder.lastPos.x, bot.dunder.lastPos.z - myMove.z) : undefined*/);
+                    bot.dunder.lookY = bot.entity.position.y - 20;
                 }
 
             }
@@ -381,6 +395,7 @@ function strictFollow(bot) {
                 digBlock(bot, myMove.x, myMove.y, myMove.z);
                 bot.dunder.isDigging = 2;
                 console.log("DigDown Strict");
+                bot.dunder.lookY = bot.entity.position.y - 20;
             } else if (bot.entity.onGround |
                 bot.entity.isInWater |
                 bot.entity.isInLava |
@@ -548,7 +563,7 @@ function strictFollow(bot) {
             }
         }
         if (bot.targetDigBlock) {
-            bot.dunder.lookY = bot.targetDigBlock.position.y;
+            bot.dunder.lookY = bot.targetDigBlock.position.y+0.5;
         } /*else if (!bot.entity.isInWater && !bot.entity.isInLava && bot.dunder.movesToGo[bot.dunder.lastPos.currentMove] && bot.dunder.lastPos.x == bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].x && bot.dunder.lastPos.z && bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].z) {
             bot.dunder.lookY = bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y + (bot.dunder.lastPos.y - bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].y) * 5;
         }*/ else {
@@ -564,28 +579,31 @@ function strictFollow(bot) {
 
         //disabling water clutching due to jump sprinting being WIP
         //console.log(bot.entity.velocity.y + " is velY");
-        if (bot.dunder.bucketTask.active || bot.entity.velocity.y < -0.3518 /*&& bot.entity.velocity.y <= -0.5518*/) {
+        if (bot.dunder.bucketTask.active || bot.entity.velocity.y < -0.3518 && /*bot.dunder.movesToGo[bot.dunder.lastPos.currentMove].mType == "fall" <- this fails sometimes since we aren't checking if it exists &&*/ false /*&& bot.entity.velocity.y <= -0.5518*/) {
+            bot.dunder.lookY = bot.entity.position.y - 20;
             if (!bot.dunder.bucketTask.active /*bot.dunder.onFire && bot.entity.onGround || true*/) {
                 bot.dunder.bucketTask.pos = null;
                 getHighestBlockBelow(bot);
                 if (bot.dunder.bucketTask.pos /*&& Math.abs(bot.entity.position.y - bot.dunder.bucketTask.pos.y) > 3.2*/) {
+                    console.log("falling");
                     equipItem(bot, ["water_bucket"]);
-                    bot.dunder.lookY = bot.entity.position.y - 20;
                     bot.dunder.bucketTask.lastState = bot.dunder.masterState;
                     bot.dunder.masterState = "bucketTest";
                     bot.dunder.state = "bucketTest";
                     bot.dunder.bucketTask.blockFunc = getHighestBlockBelow;
                     bot.dunder.bucketTask.entity = bot.entity;
                     bot.dunder.bucketTask.bucket = "water_bucket";
-                    bot.dunder.bucketTask.bucketCondition = function(bot) {return (!bot.entity.onGround && !bot.entity.isInWater);};
-                    bot.dunder.bucketTask.bucketCondition2 = function(bot) {return (bot.entity.onGround || bot.entity.isInWater);};
+                    bot.dunder.bucketTask.bucketCondition = function(bot) {return (!bot.dunder.oldOnGround && !bot.dunder.oldIsInWater);};
+                    bot.dunder.bucketTask.bucketCondition2 = function(bot) {return (bot.dunder.oldOnGround || bot.dunder.oldIsInWater);};
                     bot.dunder.bucketTask.ogCount = hasItemCount(bot, (name) => {return name == "water_bucket";});
-                    bot.dunder.bucketTask.timeout = 20;
+                    bot.dunder.bucketTask.timeout = 200;
+                    bot.dunder.bucketTask.attemptCount = 3;
                     console.log("clutch");
                     bot.dunder.bucketTask.active = true;
                 }
-                //doBucketMode(bot);
+                doBucketMode(bot);
             } else {
+                bot.dunder.lookY = bot.entity.position.y - 20;
                 doBucketMode(bot);
             }
         }
@@ -639,12 +657,20 @@ function strictFollow(bot) {
                     }
                 }
 
-                if (worryBlockCount > 0 && worryBlockCount < 3) {
-                    console.log("Can we skip from " + earliestSkip + " to after " + lattestSkip);
+                earliestSkip++;
+                lattestSkip--;
+                if (worryBlockCount > 0 && worryBlockCount < 3 && lattestSkip >= 0 && earliestSkip < bot.dunder.movesToGo.length) {
+                    console.log("Can we skip from " + (earliestSkip) + " to after " + (lattestSkip));
 
-                    var worryBlockSkippable = false;//findPath(bot, dunderBotPathfindSkips, 10, Math.floor(bot.dunder.movesToGo[lattestSkip].x), Math.floor(bot.dunder.movesToGo[lattestSkip].y), Math.floor(bot.dunder.movesToGo[lattestSkip].z));
+                    var worryBlockSkippable = false;
+                    findPath(bot, dunderBotPathfindSkips, 10, Math.floor(bot.dunder.movesToGo[lattestSkip].x), Math.floor(bot.dunder.movesToGo[lattestSkip].y), Math.floor(bot.dunder.movesToGo[lattestSkip].z), false, false);
+                    console.log(bot.dunder.skipMovesToGo.length);
+                    worryBlockSkippable = (bot.dunder.skipMovesToGo.length > 0);
                     if (worryBlockSkippable) {
-                        console.log("skip it!");
+                        console.log("skip it! ");
+                        //should function just fine without these splices here
+                        bot.dunder.movesToGo.splice(lattestSkip, earliestSkip - lattestSkip);
+                        bot.dunder.movesToGo.splice(lattestSkip, 0, ...bot.dunder.skipMovesToGo);
                     } else {
                         console.log("can't skip... (never checked, program it lol)");
                     }

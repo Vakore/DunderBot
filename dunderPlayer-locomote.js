@@ -48,6 +48,7 @@ function moveInDir(bot, stateBase, targetPos) {
         bot.setControlState("left", myState.control.left);
         bot.setControlState("right", myState.control.right);
         bot.setControlState("back", myState.control.back);
+        //bot.setControlState("sprint", myState.control.sprint);
     } else if (myState.onGround) {
         bot.setControlState("sneak", true);
         bot.dunder.controls.sneak = true;
@@ -162,7 +163,7 @@ function simulateJump(bot, target, stateBase, searchCount, theParent) {
 };
 
 
-function jumpSprintOnPath(bot, target, stateBase, searchCount, theParent) {
+function jumpSprintOnPath2(bot, target, stateBase, searchCount, theParent) {
 
           var target = {"position":{x:0,y:0,z:0}};
           var minimumMove = bot.dunder.lastPos.currentMove - 20;
@@ -179,14 +180,15 @@ function jumpSprintOnPath(bot, target, stateBase, searchCount, theParent) {
           myStateBase.yaw = Math.atan2(-myDelta.x, -myDelta.z);
 
           //Simulate jump sprints
-          for (var j = myStateBase.yaw - Math.PI / 2 + Math.PI / 8; j < myStateBase.yaw + Math.PI / 2; j += Math.PI / 8) {
+          for (var j = 0; j < 8; j++) {
+            //let j = 
             var myState = JSON.parse(JSON.stringify(myStateBase));
             myState.pos = new Vec3(myState.pos.x, myState.pos.y, myState.pos.z);
-            myState.yaw = j;
+            myState.yaw = myStateBase.yaw - (Math.PI / 2) + (Math.PI / 8) + ((Math.PI / 8) * [3,4,2,5,1,7,0][j]);
             for (var i = 0; i < 30; i++) {
                 bot.physics.simulatePlayer(myState, bot.world);
                 if (i < 31 && (myState.onGround || myState.isInWater || myState.isInLava || (i >= 2 && myState.isInWeb))) {i = 30;}
-                //bot.chat("/particle minecraft:flame " + myState.pos.x + " " + myState.pos.y + " " + myState.pos.z);
+                bot.chat("/particle minecraft:flame " + myState.pos.x + " " + myState.pos.y + " " + myState.pos.z);
             }
 
             var myScore = 25;
@@ -350,6 +352,7 @@ function doJumpSprintStuff(bot) {
                         }
                     }
                 }
+                //if (bot.entity.onGround) {console.log("!");} else {console.log("/");}
                 if (bot.entity.onGround && shouldJumpSprintOnPath && bot.dunder.lastPos.currentMove > -1 && bot.dunder.jumpTargetDelay <= 0) {
                     bot.dunder.jumpTarget = false;
                     bot.dunder.jumpTargets = [];

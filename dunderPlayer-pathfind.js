@@ -37,7 +37,7 @@ function isSwim(swimme) {
 //var lastPos = {"currentMove":0,x:0,y:0,z:0};
 
 function addNode(bot, objStuff, parent, fcost, hcost, x, y, z, moveType, brokenBlocks, brokeBlocks, placedBlocks, blockActions) {
-    var parentFCost = fcost / ((bot.dunder.attempts > 1000) ? (bot.dunder.attempts / 1000) : 1);
+    var parentFCost = fcost / ((bot.dunder.attempts > 1500) ? ((Math.floor(bot.dunder.attempts / 500) * 500) / 1000) : 1);
     if (parent) {
         parentFCost += parent.fCost;
     }//(!!!) made change, see parentFCost / number below
@@ -117,7 +117,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
     //breakBlockCost = 99999;
     //placeBlockCost = 99999;
     //console.log(attempts);
-    var breakBlockCost2 = 10;//0.045
+    var breakBlockCost2 = 15;//0.045
     /*if (attempts > 2000) {
         //breakBlockCost = 10 / 1000;
         breakBlockCost2 = 0;
@@ -194,7 +194,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
                     blockSolid(bot, x, y, node.z) || blockSolid(bot, x, y + 1, node.z) ||
                     blockSolid(bot, node.x, y, z) || blockSolid(bot, node.x, y + 1, z)) {
                     legalMove = false;         
-                } else if (bot.dunder.pathfinderOptions.sprint && node.moveType == "swimFast" | blockWater(bot, x, y, z) & blockWater(bot, x, y + 1, z)) {
+                } else if (bot.dunder[objStuff.pathfinderOptions].sprint && node.moveType == "swimFast" | blockWater(bot, x, y, z) & blockWater(bot, x, y + 1, z)) {
                     moveType = "swimFast";
                 } else {
                     moveType = "swimSlow";
@@ -228,7 +228,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
             if (!blockSolid(bot, x, y - 1, z) && !blockSolid(bot, x, y, z)) {
                 validNode(bot, objStuff, node, x, y - 1, z, endX, endY, endZ);
             }
-            if (bot.dunder.pathfinderOptions.parkour && !legalMove && !blockStand(bot, x, y - 1, z, node) && blockAir(bot, x, y, z)) {//JUMP DIAGNOL
+            if (bot.dunder[objStuff.pathfinderOptions].parkour && !legalMove && !blockStand(bot, x, y - 1, z, node) && blockAir(bot, x, y, z)) {//JUMP DIAGNOL
                 moveType = "walkDiagJump";
                 //parkour move
                 var stepDir = {"x":x - node.x, "z":z - node.z};
@@ -269,7 +269,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
                             legalMove = true;
                             //console.log("e " + x + ", " + y + ", " + z);
                         }
-                        if (checkCount == 1 && !bot.dunder.pathfinderOptions.sprint) {checkCount = 3;}
+                        if (checkCount == 1 && !bot.dunder[objStuff.pathfinderOptions].sprint) {checkCount = 3;}
                     }
                 }
             }
@@ -296,7 +296,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
             var blockAirCount = blockAir(bot, x, y, z) + blockAir(bot, x, y + 1, z);
             if (blockWaterCount == 2 || blockWaterCount == 1 && blockAirCount == 1) {
                 legalMove = true;
-                if (bot.dunder.pathfinderOptions.sprint && node.moveType == "swimFast" | blockWater(bot, x, y, z) & blockWater(bot, x, y + 1, z)) {
+                if (bot.dunder[objStuff.pathfinderOptions].sprint && node.moveType == "swimFast" | blockWater(bot, x, y, z) & blockWater(bot, x, y + 1, z)) {
                     moveType = "swimFast";
                 } else {
                     moveType = "swimSlow";
@@ -318,7 +318,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
             if (!blockSolid(bot, x, y - 1, z) && !blockSolid(bot, x, y, z)) {
                 validNode(bot, objStuff, node, x, y - 1, z, endX, endY, endZ);
             }
-            if (bot.dunder.pathfinderOptions.parkour && !legalMove && blockAir(bot, x, y - 1, z) && blockAir(bot, x, y, z)) {
+            if (bot.dunder[objStuff.pathfinderOptions].parkour && !legalMove && blockAir(bot, x, y - 1, z) && blockAir(bot, x, y, z)) {
                 //validNode(node, x, y - 1, z, endX, endY, endZ);
                 var checkCount = 0;
                 if (!blockAir(bot, node.x, node.y + 2, node.z) ||
@@ -337,7 +337,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
                         legalMove = true;
                         //myFCost += checkCount * 8;
                     }
-                    if (checkCount == 1 && !bot.dunder.pathfinderOptions.sprint) {checkCount = 3;}
+                    if (checkCount == 1 && !bot.dunder[objStuff.pathfinderOptions].sprint) {checkCount = 3;}
                 }
             }
         }
@@ -419,11 +419,11 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
             }
             if (blockSolid(bot, x, y, z) && !blockWalk(bot, x, y, z)) {brokenBlocks.push([x, y, z]);brokeBlocks = true;}
             if (blockSolid(bot, x, y + 1, z)) {brokenBlocks.push([x, y + 1, z]);brokeBlocks = true;}
-            legalMove = (!(placeBlockNeeded && !bot.dunder.pathfinderOptions.placeBlocks) && !(brokeBlocks && !bot.dunder.pathfinderOptions.breakBlocks));
-            //console.log(legalMove + ", " + placeBlockNeeded + ", " + !bot.dunder.pathfinderOptions.placeBlocks + ", " + !(placeBlockNeeded && !bot.dunder.pathfinderOptions.placeBlocks));
+            legalMove = (!(placeBlockNeeded && !bot.dunder[objStuff.pathfinderOptions].placeBlocks) && !(brokeBlocks && !bot.dunder[objStuff.pathfinderOptions].breakBlocks));
+            //console.log(legalMove + ", " + placeBlockNeeded + ", " + !bot.dunder[objStuff.pathfinderOptions].placeBlocks + ", " + !(placeBlockNeeded && !bot.dunder[objStuff.pathfinderOptions].placeBlocks));
             if (getDigTime(bot, x, y, z, false, false) == 9999999 || getDigTime(bot, x, y + 1, z, false, false) == 9999999) {legalMove = false;}
             moveType = "walk";
-            if (bot.dunder.pathfinderOptions.sprint && blockWater(bot, x, y, z) && blockWater(bot, x, y + 1, z)) {
+            if (bot.dunder[objStuff.pathfinderOptions].sprint && blockWater(bot, x, y, z) && blockWater(bot, x, y + 1, z)) {
                 moveType = "swimFast";
             } else if (blockWater(bot, x, y, z) || blockWater(bot, x, y + 1, z)) {
                 moveType = "swimSlow";
@@ -514,7 +514,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
                     legalMove = false;
                 } else {
                     legalMove = true;
-                    if (bot.dunder.pathfinderOptions.sprint && node.moveType == "swimFast" | blockWater(bot, x, y, z) & blockWater(bot, x, y + 1, z)) {
+                    if (bot.dunder[objStuff.pathfinderOptions].sprint && node.moveType == "swimFast" | blockWater(bot, x, y, z) & blockWater(bot, x, y + 1, z)) {
                         moveType = "swimFast";
                     } else {
                         moveType = "swimSlow";
@@ -544,7 +544,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
 
             var oldX = x;
             var oldZ = z;
-            if (bot.dunder.pathfinderOptions.parkour && !legalMove && blockAir(bot, x, y - 1, z) && blockAir(bot, x, y, z)) {
+            if (bot.dunder[objStuff.pathfinderOptions].parkour && !legalMove && blockAir(bot, x, y - 1, z) && blockAir(bot, x, y, z)) {
                 //parkour move
                 var stepDir = {"x":x - node.x, "z":z - node.z};
                 var checkCount = 0;
@@ -647,10 +647,10 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
             if (blockSolid(bot, x, y, z) && !blockWalk(bot, x, y, z)) {brokenBlocks.push([x, y, z]);brokeBlocks = true;}
             if (blockSolid(bot, x, y + 1, z)) {brokenBlocks.push([x, y + 1, z]);brokeBlocks = true;}
             if (blockSolid(bot, node.x, node.y + 2, node.z)) {brokenBlocks.push([node.x, node.y + 2, node.z]);brokeBlocks = true;}
-            legalMove = !(brokeBlocks && !bot.dunder.pathfinderOptions.breakBlocks);//(!(placeBlockNeeded && !bot.dunder.pathfinderOptions.placeBlocks));
+            legalMove = !(brokeBlocks && !bot.dunder[objStuff.pathfinderOptions].breakBlocks);//(!(placeBlockNeeded && !bot.dunder[objStuff.pathfinderOptions].placeBlocks));
             if (getDigTime(bot, node.x, node.y + 2, node.z, false, false) == 9999999 || getDigTime(bot, x, y, z, false, false) == 9999999 || getDigTime(bot, x, y + 1, z, false, false) == 9999999) {legalMove = false;}
             moveType = "walkJump";
-            if (bot.dunder.pathfinderOptions.sprint && blockWater(bot, x, y, z) && blockWater(bot, x, y + 1, z)) {
+            if (bot.dunder[objStuff.pathfinderOptions].sprint && blockWater(bot, x, y, z) && blockWater(bot, x, y + 1, z)) {
                 moveType = "swimFast";
             } else if (blockWater(bot, x, y, z) || blockWater(bot, x, y + 1, z)) {
                 moveType = "swimSlow";
@@ -679,7 +679,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
             var oldY = y;
             var failed = false;
             var attempts = 0;
-            while (y > bot.dunder.pathfinderOptions.lowestY && y > oldY - bot.dunder.pathfinderOptions.maxFall & !bot.dunder.pathfinderOptions.canClutch | y > oldY - bot.dunder.pathfinderOptions.maxFallClutch & bot.dunder.pathfinderOptions.canClutch && !legalMove && !failed) {
+            while (y > bot.dunder[objStuff.pathfinderOptions].lowestY && y > oldY - bot.dunder[objStuff.pathfinderOptions].maxFall & !bot.dunder[objStuff.pathfinderOptions].canClutch | y > oldY - bot.dunder[objStuff.pathfinderOptions].maxFallClutch & bot.dunder[objStuff.pathfinderOptions].canClutch && !legalMove && !failed) {
                 attempts++;
                 if (blockStand(bot, x, y - 1, z, node) || blockWater(bot, x, y, z) || blockLava(bot, x, y, z)) {
                     legalMove = true;
@@ -728,7 +728,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
             var oldY = y;
             var failed = false;
             var attempts = 0;
-            while (y > bot.dunder.pathfinderOptions.lowestY && y > oldY - bot.dunder.pathfinderOptions.maxFall & !bot.dunder.pathfinderOptions.canClutch | y > oldY - bot.dunder.pathfinderOptions.maxFallClutch & bot.dunder.pathfinderOptions.canClutch && !legalMove && !failed) {
+            while (y > bot.dunder[objStuff.pathfinderOptions].lowestY && y > oldY - bot.dunder[objStuff.pathfinderOptions].maxFall & !bot.dunder[objStuff.pathfinderOptions].canClutch | y > oldY - bot.dunder[objStuff.pathfinderOptions].maxFallClutch & bot.dunder[objStuff.pathfinderOptions].canClutch && !legalMove && !failed) {
                 attempts++;
                 if (blockStand(bot, x, y - 1, z, node) || blockWater(bot, x, y, z) || blockWater(bot, x, y + 1, z) || blockLava(bot, x, y, z)) {
                     legalMove = true;
@@ -763,7 +763,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
                 blockLava(bot, x, y + 2, z)) {
                 legalMove = false;
             }
-            if (y != oldY && bot.dunder.pathfinderOptions.parkour) {
+            if (y != oldY && bot.dunder[objStuff.pathfinderOptions].parkour) {
                 validNode(bot, objStuff, node, x, oldY - 1, z, endX, endY, endZ);
             } 
             if (!legalMove) {
@@ -904,7 +904,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
             } else {
                 //myFCost += 3;
             }
-            while (y > bot.dunder.pathfinderOptions.lowestY && y > oldY - bot.dunder.pathfinderOptions.maxFall & !bot.dunder.pathfinderOptions.canClutch | y > oldY - bot.dunder.pathfinderOptions.maxFallClutch & bot.dunder.pathfinderOptions.canClutch && !legalMove && !failed) {
+            while (y > bot.dunder[objStuff.pathfinderOptions].lowestY && y > oldY - bot.dunder[objStuff.pathfinderOptions].maxFall & !bot.dunder[objStuff.pathfinderOptions].canClutch | y > oldY - bot.dunder[objStuff.pathfinderOptions].maxFallClutch & bot.dunder[objStuff.pathfinderOptions].canClutch && !legalMove && !failed) {
                 attempts++;
                 if (blockStand(bot, x, y - 1, z, node) || blockWater(bot, x, y, z) || blockLava(bot, x, y, z)) {
                     legalMove = true;
@@ -1015,7 +1015,7 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
             myFCost += breakBlockCost2;
             brokenBlocks.push([x, y + 1, z]);
         }
-        legalMove = !(!isSwim(moveType) && !bot.dunder.pathfinderOptions.placeBlocks);//true;
+        legalMove = !(!isSwim(moveType) && !bot.dunder[objStuff.pathfinderOptions].placeBlocks);//true;
         if (getDigTime(bot, x, y + 1, z, false, false) == 9999999 || moveType == "goUp" && node && isSwim(node.moveType)) {legalMove = false;/*console.log("asdf");*/}
         //console.log("goUp " + myFCost);
     }
@@ -1053,8 +1053,8 @@ function validNode(bot, objStuff, node, x, y, z, endX, endY, endZ, type) {
 
 //var bestNodeIndex = 0;
 function findPath(bot, objStuff, maxAttemptCount, endX, endY, endZ, correction, extension, extraOptions) {
-    bot.dunder.pathfinderOptions.canClutch = hasItem(bot, ["water_bucket"]);
-    bot.dunder.lastPosOnPath = true;
+    bot.dunder[objStuff.pathfinderOptions].canClutch = hasItem(bot, ["water_bucket"]);
+    bot.dunder[objStuff.lastPosOnPath] = true;
     console.log(bot.dunder.cbtm + " is looking for a path... correction, extension, maxAttemptCount: " + correction + ", " + extension + ", " + maxAttemptCount);
     bot.dunder[objStuff.maxAttempts] = maxAttemptCount;
     if (bot.dunder[objStuff.movesToGo].length == 0) {extension = false;}
@@ -1070,12 +1070,12 @@ function findPath(bot, objStuff, maxAttemptCount, endX, endY, endZ, correction, 
         }
         chunkColumns[leColumns[i].chunkZ][leColumns[i].chunkX] = true;
     }
-    //console.log("BEFORE: " + JSON.stringify(bot.dunder.lastPos) + ", " + JSON.stringify(bot.dunder[objStuff.movesToGo][bot.dunder.lastPos.currentMove]) + ", length: " + bot.dunder[objStuff.movesToGo].length);
+    //console.log("BEFORE: " + JSON.stringify(bot.dunder[objStuff.lastPos]) + ", " + JSON.stringify(bot.dunder[objStuff.movesToGo][bot.dunder[objStuff.lastPos].currentMove]) + ", length: " + bot.dunder[objStuff.movesToGo].length);
     bot.clearControlStates();
-    //var currentMovePos = {"x":bot.dunder[objStuff.movesToGo][bot.dunder.lastPos.currentMove].x,"y":bot.dunder[objStuff.movesToGo][bot.dunder.lastPos.currentMove].y,"z":bot.dunder[objStuff.movesToGo][bot.dunder.lastPos.currentMove].z};
+    //var currentMovePos = {"x":bot.dunder[objStuff.movesToGo][bot.dunder[objStuff.lastPos].currentMove].x,"y":bot.dunder[objStuff.movesToGo][bot.dunder[objStuff.lastPos].currentMove].y,"z":bot.dunder[objStuff.movesToGo][bot.dunder[objStuff.lastPos].currentMove].z};
     var movesToGoLength = bot.dunder[objStuff.movesToGo].length;
     if (!extension) {
-        bot.dunder.lastPos = {"currentMove":0,"x":Math.floor(bot.entity.position.x), "y":Math.floor(bot.entity.position.y), "z":Math.floor(bot.entity.position.z), "mType":"start"};
+        bot.dunder[objStuff.lastPos] = {"currentMove":0,"x":Math.floor(bot.entity.position.x), "y":Math.floor(bot.entity.position.y), "z":Math.floor(bot.entity.position.z), "mType":"start"};
     }
     if (!correction && !extension) {
         bot.dunder[objStuff.nodes] = [];
@@ -1122,13 +1122,13 @@ function findPath(bot, objStuff, maxAttemptCount, endX, endY, endZ, correction, 
         bestOne[0] += 10;
         if (bestOne[0] > bot.dunder[objStuff.movesToGo].length - 6) {bestOne[0] = bot.dunder[objStuff.movesToGo].length - 6;}
         if (bestOne[0] >= 0) {
-            bot.dunder.lastPos.currentMove -= (bestOne[0] + 1);
+            bot.dunder[objStuff.lastPos].currentMove -= (bestOne[0] + 1);
             bot.dunder[objStuff.movesToGo].splice(0, bestOne[0] + 1);
         }
         /*if (bot.dunder[objStuff.movesToGo].length < 10) {
             bot.dunder[objStuff.movesToGo] = [];
             console.log(bot.dunder[objStuff.movesToGo].length);
-            bot.dunder.lastPos = {"currentMove":0,"x":Math.floor(bot.entity.position.x), "y":Math.floor(bot.entity.position.y), "z":Math.floor(bot.entity.position.z), "mType":};
+            bot.dunder[objStuff.lastPos] = {"currentMove":0,"x":Math.floor(bot.entity.position.x), "y":Math.floor(bot.entity.position.y), "z":Math.floor(bot.entity.position.z), "mType":};
             extension = false;
         }*/
      } /*else if (extension) {
@@ -1146,24 +1146,24 @@ function findPath(bot, objStuff, maxAttemptCount, endX, endY, endZ, correction, 
         }
         bot.dunder[objStuff.movesToGo].splice(0, bestOne[0] + 1);
         var foundCurrentMove = false;
-        if (bot.dunder[objStuff.movesToGo].length - 1 < bot.dunder.lastPos.currentMove && bot.dunder.lastPos.currentMove) {
-            console.log(bot.dunder.lastPos.currentMove);
+        if (bot.dunder[objStuff.movesToGo].length - 1 < bot.dunder[objStuff.lastPos].currentMove && bot.dunder[objStuff.lastPos].currentMove) {
+            console.log(bot.dunder[objStuff.lastPos].currentMove);
             for (var i = 0; i < bot.dunder[objStuff.movesToGo].length; i++) {
-                if (bot.dunder[objStuff.movesToGo][bot.dunder.lastPos.currentMove] &&
-                    bot.dunder[objStuff.movesToGo][i].x == bot.dunder[objStuff.movesToGo][bot.dunder.lastPos.currentMove].x &&
-                    bot.dunder[objStuff.movesToGo][i].y == bot.dunder[objStuff.movesToGo][bot.dunder.lastPos.currentMove].y &&
-                    bot.dunder[objStuff.movesToGo][i].z == bot.dunder[objStuff.movesToGo][bot.dunder.lastPos.currentMove].z) {
-                    bot.dunder.lastPos.currentMove = i;
+                if (bot.dunder[objStuff.movesToGo][bot.dunder[objStuff.lastPos].currentMove] &&
+                    bot.dunder[objStuff.movesToGo][i].x == bot.dunder[objStuff.movesToGo][bot.dunder[objStuff.lastPos].currentMove].x &&
+                    bot.dunder[objStuff.movesToGo][i].y == bot.dunder[objStuff.movesToGo][bot.dunder[objStuff.lastPos].currentMove].y &&
+                    bot.dunder[objStuff.movesToGo][i].z == bot.dunder[objStuff.movesToGo][bot.dunder[objStuff.lastPos].currentMove].z) {
+                    bot.dunder[objStuff.lastPos].currentMove = i;
                     foundCurrentMove = true;
                 }
             }
         }
         if (!foundCurrentMove) {
-            //bot.dunder.lastPos.currentMove -= Math.abs(bot.dunder[objStuff.movesToGo].length - movesToGoLength);
-            bot.dunder.lastPos.currentMove = bot.dunder[objStuff.movesToGo].length - 1;
-            if (bot.dunder.lastPos.currentMove < 0) {bot.dunder.lastPos.currentMove = 0;}
+            //bot.dunder[objStuff.lastPos].currentMove -= Math.abs(bot.dunder[objStuff.movesToGo].length - movesToGoLength);
+            bot.dunder[objStuff.lastPos].currentMove = bot.dunder[objStuff.movesToGo].length - 1;
+            if (bot.dunder[objStuff.lastPos].currentMove < 0) {bot.dunder[objStuff.lastPos].currentMove = 0;}
         }
-        console.log("lastPos found: " + foundCurrentMove + ", " + bot.dunder.lastPos.currentMove);
+        console.log("lastPos found: " + foundCurrentMove + ", " + bot.dunder[objStuff.lastPos].currentMove);
         //endX = bot.dunder[objStuff.movesToGo][bestOne[0]].x;
         //endY = bot.dunder[objStuff.movesToGo][bestOne[0]].y;
         //endZ = bot.dunder[objStuff.movesToGo][bestOne[0]].z;
@@ -1181,14 +1181,14 @@ function findPath(bot, objStuff, maxAttemptCount, endX, endY, endZ, correction, 
     var maxAttempts = 0;
     bot.dunder[objStuff.bestNode] = bot.dunder[objStuff.nodes][0];
     //console.log(bot.dunder[objStuff.bestNode].blockActions);
-    //console.log(bot.dunder.findingPath);
-    if (bot.dunder.findingPath) {
-        clearInterval(bot.dunder.findingPath);
-        bot.dunder.findingPath = null;
+    //console.log(bot.dunder[objStuff.findingPath]);
+    if (bot.dunder[objStuff.findingPath]) {
+        clearInterval(bot.dunder[objStuff.findingPath]);
+        bot.dunder[objStuff.findingPath] = null;
     }
 
     if (objStuff.attempts == "attempts") {
-        bot.dunder.findingPath = setInterval(function() {doFindingPath(bot, objStuff, extension, correction, endX, endY, endZ, maxAttempts, extraOptions);}, 50);
+        bot.dunder[objStuff.findingPath] = setInterval(function() {doFindingPath(bot, objStuff, extension, correction, endX, endY, endZ, maxAttempts, extraOptions);}, 50);
     } else {
         return doFindingPath(bot, objStuff, extension, correction, endX, endY, endZ, maxAttempts, extraOptions);
     }
@@ -1199,7 +1199,7 @@ var doFindingPath = function(bot, objStuff, extension, correction, endX, endY, e
         //console.log(bot.dunder.cbtm + " is the bot's ID");
         bot.dunder[objStuff.bestNodeIndex] = 0;
         //console.log("searching...");
-        bot.dunder.searchingPath = 10;
+        bot.dunder[objStuff.searchingPath] = 10;
         if (!extension) {
             bot.dunder.destinationTimer = 30;
         }
@@ -1242,7 +1242,7 @@ var doFindingPath = function(bot, objStuff, extension, correction, endX, endY, e
                     chunkAvailible = true;
                 }
             }
-            if (bot.dunder[objStuff.bestNode] && (bot.dunder[objStuff.attempts] > bot.dunder[objStuff.maxAttempts] /*&& dist3d(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].y, bot.dunder[objStuff.bestNode].z, bot.dunder.goal.x, bot.dunder.goal.y, bot.dunder.goal.z) < dist3d(bot.dunder.lastPos.x, bot.dunder.lastPos.y, bot.dunder.lastPos.z, bot.dunder.goal.x, bot.dunder.goal.y, bot.dunder.goal.z)*/ || endZ != undefined && /*bot.dunder[objStuff.bestNode].x == endX && bot.dunder[objStuff.bestNode].y == endY && bot.dunder[objStuff.bestNode].z == endZ*/ distMan3d(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].y, bot.dunder[objStuff.bestNode].z, endX, endY, endZ) <= bot.dunder.pathGoalForgiveness && (!extraOptions || extraOptions && !extraOptions.mustBeVisible || extraOptions && extraOptions.mustBeVisible && visibleFromPos(bot, new Vec3(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].y, bot.dunder[objStuff.bestNode].z), new Vec3 (endX, endY, endZ), bot.dunder[objStuff.bestNode])) ||
+            if (bot.dunder[objStuff.bestNode] && (bot.dunder[objStuff.attempts] > bot.dunder[objStuff.maxAttempts] /*&& dist3d(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].y, bot.dunder[objStuff.bestNode].z, bot.dunder.goal.x, bot.dunder.goal.y, bot.dunder.goal.z) < dist3d(bot.dunder[objStuff.lastPos].x, bot.dunder[objStuff.lastPos].y, bot.dunder[objStuff.lastPos].z, bot.dunder.goal.x, bot.dunder.goal.y, bot.dunder.goal.z)*/ || endZ != undefined && /*bot.dunder[objStuff.bestNode].x == endX && bot.dunder[objStuff.bestNode].y == endY && bot.dunder[objStuff.bestNode].z == endZ*/ distMan3d(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].y, bot.dunder[objStuff.bestNode].z, endX, endY, endZ) <= bot.dunder.pathGoalForgiveness && (!extraOptions || extraOptions && !extraOptions.mustBeVisible || extraOptions && extraOptions.mustBeVisible && visibleFromPos(bot, new Vec3(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].y, bot.dunder[objStuff.bestNode].z), new Vec3 (endX, endY, endZ), bot.dunder[objStuff.bestNode])) ||
                 endZ == undefined && bot.dunder[objStuff.bestNode].x == endX && bot.dunder[objStuff.bestNode].z == endY /*dist3d(bot.dunder[objStuff.bestNode].x, bot.dunder[objStuff.bestNode].z, 0, endX, endY, 0) <= bot.dunder.pathGoalForgiveness*/ || !chunkAvailible)) {
                 botPathfindTimer = 0;
                 bot.dunder.foundPath = true;
@@ -1292,7 +1292,7 @@ var doFindingPath = function(bot, objStuff, extension, correction, endX, endY, e
                     steps++;
                 }
                 if (extension) {
-                    bot.dunder.lastPos.currentMove += extender.length;
+                    bot.dunder[objStuff.lastPos].currentMove += extender.length;
                     bot.dunder[objStuff.movesToGo] = extender.concat(bot.dunder[objStuff.movesToGo]);
                 }
                 //bot.chat("I can be there in " + steps + " steps.");
@@ -1335,21 +1335,21 @@ var doFindingPath = function(bot, objStuff, extension, correction, endX, endY, e
             //bot.dunder[objStuff.openNodes].splice(bot.dunder[objStuff.bestNodeIndex], 1);
         }
         if (!bot.dunder[objStuff.bestNode] || bot.dunder.foundPath || maxAttempts >= 7500 /*|| botPathfindTimer > 20 * 3*/) {
-            //bot.dunder.searchingPath = 0;
+            //bot.dunder[objStuff.searchingPath] = 0;
             botPathfindTimer = 0;
 
             if (objStuff.attempts != "skipAttempts") {
-                clearInterval(bot.dunder.findingPath);
-                bot.dunder.findingPath = null;
+                clearInterval(bot.dunder[objStuff.findingPath]);
+                bot.dunder[objStuff.findingPath] = null;
                 console.log("non-skipper");
             } else {
                 console.log("skipper");
             }
 
             if (!extension) {
-                bot.dunder.lastPos.currentMove = bot.dunder[objStuff.movesToGo].length - 1;
+                bot.dunder[objStuff.lastPos].currentMove = bot.dunder[objStuff.movesToGo].length - 1;
             }
-            //console.log("AFTER: " + JSON.stringify(bot.dunder.lastPos) + ", " + JSON.stringify(bot.dunder[objStuff.movesToGo][bot.dunder.lastPos.currentMove]) + ", length: " + bot.dunder[objStuff.movesToGo].length);
+            //console.log("AFTER: " + JSON.stringify(bot.dunder[objStuff.lastPos]) + ", " + JSON.stringify(bot.dunder[objStuff.movesToGo][bot.dunder[objStuff.lastPos].currentMove]) + ", length: " + bot.dunder[objStuff.movesToGo].length);
             if (bot.dunder[objStuff.attempts] > bot.dunder[objStuff.maxAttempts]) {
                console.log("\n" + bot.dunder[objStuff.maxAttempts]);
                //console.log("Did not find full path quickly, taking the best known one known so far...");
@@ -1365,7 +1365,7 @@ var doFindingPath = function(bot, objStuff, extension, correction, endX, endY, e
             }
         }
     if (objStuff.attempts != "attempts") {
-        console.log("asdf " + bot.dunder.foundPath);
+        //console.log("asdf " + bot.dunder.foundPath);
         return bot.dunder.foundPath;
     }
 };
