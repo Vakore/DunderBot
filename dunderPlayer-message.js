@@ -4,6 +4,9 @@ function parseMessage(bot, username, msg) {
   if (commanders.includes(username)) {
     //console.log(username == "Vakore");
     switch (msg[0].toLowerCase()) {
+        case "optimize":
+            optimizeInventory(bot);
+        break;
         case "bucketz":
             bot.dunder.masterState = "bucketTest";
             bot.dunder.state = "bucketTest";
