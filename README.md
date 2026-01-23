@@ -1,3 +1,7 @@
+# NOTICE
+This project is no longer being worked on. Mineflayer is far too buggy and it's annoying to keep up with it's bugs/physics inconsistencies that will get it kicked from most server. I do have another botting project here, but I am not currently working on it as my focuses lie elsewhere. I may pick up Minecraft botting in the future again, but no promises. If I do, it will most likely be here:
+[https://github.com/Vakore/DunderBotDLC](https://github.com/Vakore/DunderBotDLC)
+
 # DunderBot
 By Vakore
 
